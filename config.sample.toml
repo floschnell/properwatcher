@@ -1,0 +1,51 @@
+# this is a sample configuration file
+# the program will pick it up, if it is named config.toml
+
+# if this is a testrun
+# during a testrun no sink will be triggered
+test = false
+
+# number of threads on which the crawlers will be executed
+thread_count = 4
+
+# set how often the scraping process will be triggered
+# run every 5 minutes (300 seconds)
+interval = 300
+
+# there can be multiple watcher blocks
+# a watcher defines an endpoint that will be scraped in the specified time interval
+# properties found on any of the watched endpoints will be merged into one big result set
+# available crawlers are: immoscout, immowelt, wohnungsboerse, wggesucht, sueddeutsche
+# available contract_types: buy, rent
+# available property_types: house, flat
+[[watcher]]
+city = "Munich"
+host = "https://www.immobilienscout24.de/Suche/de/bayern/muenchen-kreis/wohnung-mieten?numberofrooms=2.0-&price=-1500.0&livingspace=40.0-&enteredFrom=one_step_search"
+crawler = "immoscout"
+contract_type = "rent"
+property_type = "flat"
+
+# optionally the found properties can be stored in a firebase database.
+# the database will also be used to deduplicate found entries.
+# if the database is not enabled, properwatcher will only 
+[database]
+# the database and all related features can be toggled.
+enabled = false
+# if enabled, the file from auth_json_path will be read and used for authentication.
+auth_json_path = "firebase.json"
+
+# found properties can be geocoded (address will be translated into lat/long coordinates).
+[geocoding]
+enabled = false
+# nominatim API will be used for geocoding
+# either use the global one, or you can also use a local instance
+nominatim_url = "https://nominatim.openstreetmap.org/search"
+
+# found properties can be sent to a given Telegram channel
+# therefore, you first need to create a Telegram bot and start a conversation with it.
+[telegram]
+enabled = true
+# API key of your Telegram bot
+api_key = "<telegram-bot-api-key>"
+# chat id of the conversation with your private bot
+chat_id = 0
