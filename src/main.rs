@@ -13,6 +13,7 @@ use std::thread::JoinHandle;
 use std::time::Instant;
 use firestore_db_and_auth::{Credentials, ServiceSession, documents, errors};
 use std::collections::HashMap;
+use std::env;
 
 fn get_url(source: &String, external_id: String) -> String {
   match &source[..] {
@@ -49,8 +50,13 @@ fn send_telegram_message(app_config: &ApplicationConfig, msg: String) -> () {
 }
 
 fn main() {
-  print!("loading configuration ... ");
-  let app_config = configuration::read();
+  let args: Vec<String> = env::args().collect();
+  let config_path: String = args
+    .get(1).map(|arg| arg.to_owned())
+    .unwrap_or(String::from("config.toml"));
+
+  print!("loading configuration from {} ... ", config_path);
+  let app_config = configuration::read(config_path);
   println!("success.");
 
   let session: Option<ServiceSession> = if app_config.database.enabled {

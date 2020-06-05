@@ -28,12 +28,12 @@ pub struct ApplicationConfig {
   pub geocoding: GeocodingConfig,
   pub telegram: TelegramConfig,
   pub crawler_configs: Vec<CrawlerConfig>,
-  pub database: DatabaseConfig,
+  pub database: DatabaseConfig, 
 }
 
-pub fn read() -> ApplicationConfig {
+pub fn read(config_path: String) -> ApplicationConfig {
   let mut config = Config::new();
-  config.merge(File::with_name("config")).unwrap();
+  config.merge(File::with_name(config_path.as_str())).unwrap();
   let test = config.get("test").unwrap_or(false);
   let thread_count = config.get("thread_count").unwrap_or(2);
   let interval = config.get("interval").unwrap_or(300);
