@@ -27,7 +27,7 @@ Since the tool is written in Rust it comes with a very low memory and cpu footpr
 
 ### Configuration File
 
-Settings and property queries that should be watched have to be defined in a configuration file. propertywatcher by default looks for a file called `config.toml` that resides in the same directory as the tool is run from. A sample configuration file can be found in this repository and is named `config.sample.toml`. You can create a copy and adjust it to your needs. Pay special attention to the `watcher` section. This section can be given multiple times and will tell properwatcher, where to look for new flats/houses.
+Settings and property queries that should be watched have to be defined in a configuration file. propertywatcher by default looks for a file called `config.toml` that resides in the same directory as the tool is run from. A sample configuration file can be found in this repository and is named [config.sample.toml](/config.sample.toml). You can create a copy and adjust it to your needs. Pay special attention to the [`watcher` section](config.sample.toml#L21). This section can be given multiple times and will tell properwatcher, where to look for new flats/houses.
 
 ### via Docker
 

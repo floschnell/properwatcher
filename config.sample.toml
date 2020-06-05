@@ -44,7 +44,7 @@ nominatim_url = "https://nominatim.openstreetmap.org/search"
 # found properties can be sent to a given Telegram channel
 # therefore, you first need to create a Telegram bot and start a conversation with it.
 [telegram]
-enabled = true
+enabled = false
 # API key of your Telegram bot
 api_key = "<telegram-bot-api-key>"
 # chat id of the conversation with your private bot
