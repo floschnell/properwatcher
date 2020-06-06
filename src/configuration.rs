@@ -1,5 +1,5 @@
-use config::{Config, File};
 use crate::crawlers::Config as CrawlerConfig;
+use config::{Config, File};
 
 #[derive(Clone, Debug)]
 pub struct TelegramConfig {
@@ -18,6 +18,7 @@ pub struct GeocodingConfig {
 pub struct DatabaseConfig {
   pub enabled: bool,
   pub auth_json_path: String,
+  pub collection_name: String,
 }
 
 #[derive(Clone, Debug)]
@@ -28,7 +29,7 @@ pub struct ApplicationConfig {
   pub geocoding: GeocodingConfig,
   pub telegram: TelegramConfig,
   pub crawler_configs: Vec<CrawlerConfig>,
-  pub database: DatabaseConfig, 
+  pub database: DatabaseConfig,
 }
 
 pub fn read(config_path: String) -> ApplicationConfig {
@@ -43,21 +44,53 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let telegram_chat_id = config.get("telegram.chat_id").unwrap_or(0);
 
   let geocoding_enabled = config.get("geocoding.enabled").unwrap_or(false);
-  let geocoding_nominatim_url: String = config.get("geocoding.nominatim_url").unwrap_or(String::new());
+  let geocoding_nominatim_url: String = config
+    .get("geocoding.nominatim_url")
+    .unwrap_or(String::new());
 
   let database_enabled = config.get("database.enabled").unwrap_or(false);
-  let database_auth_json_path = config.get("database.auth_json_path").unwrap_or(String::new());
+  let database_auth_json_path = config
+    .get("database.auth_json_path")
+    .unwrap_or(String::new());
+  let database_collection_name = config
+    .get("database.collection_name")
+    .unwrap_or(String::from("properties"));
 
   let mut crawler_configs: Vec<CrawlerConfig> = vec![];
   let watcher_arr = config.get_array("watcher").unwrap();
   for watcher in watcher_arr {
     let crawler_values = watcher.into_table().unwrap();
-    let crawler = crawler_values.get("crawler").unwrap().to_owned().into_str().unwrap();
-    let contract = crawler_values.get("contract_type").unwrap().to_owned().into_str().unwrap();
-    let property = crawler_values.get("property_type").unwrap().to_owned().into_str().unwrap();
+    let crawler = crawler_values
+      .get("crawler")
+      .unwrap()
+      .to_owned()
+      .into_str()
+      .unwrap();
+    let contract = crawler_values
+      .get("contract_type")
+      .unwrap()
+      .to_owned()
+      .into_str()
+      .unwrap();
+    let property = crawler_values
+      .get("property_type")
+      .unwrap()
+      .to_owned()
+      .into_str()
+      .unwrap();
     let crawler_config = CrawlerConfig {
-      city: crawler_values.get("city").unwrap().to_owned().into_str().unwrap(),
-      address: crawler_values.get("address").unwrap().to_owned().into_str().unwrap(),
+      city: crawler_values
+        .get("city")
+        .unwrap()
+        .to_owned()
+        .into_str()
+        .unwrap(),
+      address: crawler_values
+        .get("address")
+        .unwrap()
+        .to_owned()
+        .into_str()
+        .unwrap(),
       crawler,
       contract_type: contract.parse().unwrap(),
       property_type: property.parse().unwrap(),
@@ -81,6 +114,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
     database: DatabaseConfig {
       enabled: database_enabled,
       auth_json_path: database_auth_json_path,
+      collection_name: database_collection_name,
     },
     crawler_configs,
   }
