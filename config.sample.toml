@@ -20,7 +20,7 @@ interval = 300
 # available property_types: house, flat
 [[watcher]]
 city = "Munich"
-host = "https://www.immobilienscout24.de/Suche/de/bayern/muenchen-kreis/wohnung-mieten?numberofrooms=2.0-&price=-1500.0&livingspace=40.0-&enteredFrom=one_step_search"
+address = "https://www.immobilienscout24.de/Suche/de/bayern/muenchen-kreis/wohnung-mieten?numberofrooms=2.0-&price=-1500.0&livingspace=40.0-&enteredFrom=one_step_search"
 crawler = "immoscout"
 contract_type = "rent"
 property_type = "flat"
@@ -33,6 +33,8 @@ property_type = "flat"
 enabled = false
 # if enabled, the file from auth_json_path will be read and used for authentication.
 auth_json_path = "firebase.json"
+# collection name
+collection_name = "properties"
 
 # found properties can be geocoded (address will be translated into lat/long coordinates).
 [geocoding]
