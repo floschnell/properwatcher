@@ -25,6 +25,7 @@ pub struct DatabaseConfig {
 pub struct ApplicationConfig {
   pub test: bool,
   pub interval: u64,
+  pub initial_run: bool,
   pub thread_count: i32,
   pub geocoding: GeocodingConfig,
   pub telegram: TelegramConfig,
@@ -38,6 +39,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let test = config.get("test").unwrap_or(false);
   let thread_count = config.get("thread_count").unwrap_or(2);
   let interval = config.get("interval").unwrap_or(300);
+  let initial_run = config.get("initial_run").unwrap_or(false);
 
   let telegram_enabled = config.get("telegram.enabled").unwrap_or(false);
   let telegram_api_key = config.get("telegram.api_key").unwrap_or(String::from(""));
@@ -101,6 +103,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
   ApplicationConfig {
     test,
     interval,
+    initial_run,
     thread_count: thread_count,
     geocoding: GeocodingConfig {
       enabled: geocoding_enabled,

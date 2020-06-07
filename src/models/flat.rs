@@ -12,11 +12,11 @@ pub enum PropertyType {
 impl std::str::FromStr for PropertyType {
   type Err = ();
   fn from_str(s: &str) -> Result<Self, ()> {
-      match s {
-        "house" => Ok(PropertyType::House),
-        "flat" => Ok(PropertyType::Flat),
-        _ => Err(()),
-      }
+    match s {
+      "house" => Ok(PropertyType::House),
+      "flat" => Ok(PropertyType::Flat),
+      _ => Err(()),
+    }
   }
 }
 
@@ -29,11 +29,11 @@ pub enum ContractType {
 impl std::str::FromStr for ContractType {
   type Err = ();
   fn from_str(s: &str) -> Result<Self, ()> {
-      match s {
-        "rent" => Ok(ContractType::Rent),
-        "buy" => Ok(ContractType::Buy),
-        _ => Err(()),
-      }
+    match s {
+      "rent" => Ok(ContractType::Rent),
+      "buy" => Ok(ContractType::Buy),
+      _ => Err(()),
+    }
   }
 }
 
@@ -61,6 +61,8 @@ pub struct PropertyData {
   pub contract_type: ContractType,
   pub property_type: PropertyType,
   pub squaremeters: f32,
+  #[serde(skip_serializing_if = "Option::is_none")]
+  pub plot_squaremeters: Option<f32>,
   pub address: String,
   pub title: String,
   pub externalid: String,
@@ -129,10 +131,10 @@ impl Property {
 
 #[cfg(test)]
 mod tests {
+  use crate::models::ContractType;
   use crate::models::Property;
   use crate::models::PropertyData;
   use crate::models::PropertyType;
-  use crate::models::ContractType;
 
   #[test]
   fn compare_flat_too_simple() {
@@ -167,6 +169,7 @@ mod tests {
         address: String::from("Some address"),
         title: String::from("This is some title"),
         externalid: String::from("1"),
+        plot_squaremeters: None,
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
@@ -184,6 +187,7 @@ mod tests {
         address: String::from("This is some other address"),
         title: String::from("This is some other title"),
         externalid: String::from("1"),
+        plot_squaremeters: None,
         rooms: 1.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
@@ -206,6 +210,7 @@ mod tests {
         address: String::from("Some address"),
         title: String::from("This is some title"),
         externalid: String::from("1a"),
+        plot_squaremeters: None,
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
@@ -223,6 +228,7 @@ mod tests {
         address: String::from("Some address"),
         title: String::from("This is some title"),
         externalid: String::from("1b"),
+        plot_squaremeters: None,
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
@@ -245,6 +251,7 @@ mod tests {
         address: String::from("Some address"),
         title: String::from("This is% some title!"),
         externalid: String::from("1a"),
+        plot_squaremeters: None,
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
@@ -262,6 +269,7 @@ mod tests {
         address: String::from("Some other address"),
         title: String::from("This is some title"),
         externalid: String::from("1b"),
+        plot_squaremeters: None,
         rooms: 3.5,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
@@ -305,6 +313,7 @@ mod tests {
         address: String::from("Some address"),
         title: String::from("This is% some title!"),
         externalid: String::from("1a"),
+        plot_squaremeters: Some(100.0),
         rooms: 3.,
         contract_type: ContractType::Buy,
         property_type: PropertyType::House,
@@ -323,6 +332,7 @@ mod tests {
         title: String::from("This is some other title"),
         externalid: String::from("1b"),
         rooms: 3.5,
+        plot_squaremeters: Some(200.0),
         contract_type: ContractType::Buy,
         property_type: PropertyType::House,
       }),

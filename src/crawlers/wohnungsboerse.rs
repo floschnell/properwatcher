@@ -3,10 +3,10 @@ extern crate reqwest;
 extern crate std;
 
 use super::{Crawler, Error};
-use crate::models::{PropertyData, PropertyType, ContractType};
-use kuchiki::{ElementData, NodeDataRef};
 use crate::crawlers::Metadata;
 use crate::models::Encoding;
+use crate::models::{ContractType, PropertyData, PropertyType};
+use kuchiki::{ElementData, NodeDataRef};
 
 impl From<()> for Error {
   fn from(_: ()) -> Self {
@@ -19,7 +19,6 @@ impl From<()> for Error {
 pub struct Wohnungsboerse {}
 
 impl Crawler for Wohnungsboerse {
-  
   fn metadata(&self) -> Metadata {
     Metadata {
       name: String::from("wohnungsboerse"),
@@ -60,6 +59,7 @@ impl Crawler for Wohnungsboerse {
       Some(externalid) => Ok(PropertyData {
         price: Self::parse_number(price)?,
         squaremeters: Self::parse_number(squaremeters)?,
+        plot_squaremeters: None,
         address,
         title,
         rooms: Self::parse_number(rooms)?,

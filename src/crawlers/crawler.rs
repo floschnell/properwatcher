@@ -5,8 +5,8 @@ extern crate reqwest;
 extern crate std;
 
 use self::regex::Regex;
-use crate::models::PropertyData;
 use crate::models::Encoding;
+use crate::models::PropertyData;
 use kuchiki::{ElementData, NodeDataRef};
 use std::ops::Deref;
 
@@ -76,19 +76,19 @@ pub trait Crawler: Send + Sync {
     }
   }
 
-  fn parse_number(rent_as_str: String) -> Result<f32, Error>
+  fn parse_number(number_as_str: String) -> Result<f32, Error>
   where
     Self: Sized,
   {
     let rent_regex = Regex::new(r"\d+(\.\d{3})*(,\d+)?").unwrap();
     match rent_regex
-      .captures_iter(rent_as_str.as_str())
+      .captures_iter(number_as_str.as_str())
       .next()
       .and_then(|capture| Some(capture[0].replace(".", "").replace(",", ".")))
     {
       Some(rent) => Ok(rent.parse()?),
       None => Err(Error {
-        message: format!("No number found in '{}'!", rent_as_str),
+        message: format!("No number found in '{}'!", number_as_str),
       }),
     }
   }

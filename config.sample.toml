@@ -8,6 +8,10 @@ test = false
 # number of threads on which the crawlers will be executed
 thread_count = 4
 
+# if true, the first run will be used to setup
+# only on the second run observers will be informed
+initial_run = false
+
 # set how often the scraping process will be triggered
 # run every 5 minutes (300 seconds)
 interval = 300

@@ -4,10 +4,10 @@ extern crate reqwest;
 extern crate std;
 
 use super::{Crawler, Error};
-use crate::models::{PropertyData, PropertyType, ContractType};
-use kuchiki::{ElementData, NodeDataRef};
 use crate::crawlers::Metadata;
 use crate::models::Encoding;
+use crate::models::{ContractType, PropertyData, PropertyType};
+use kuchiki::{ElementData, NodeDataRef};
 
 pub struct ImmoWelt {
   pub brackets: regex::Regex,
@@ -22,12 +22,11 @@ impl ImmoWelt {
 }
 
 impl Crawler for ImmoWelt {
-  
   fn metadata(&self) -> Metadata {
-     Metadata {
-       name: String::from("immowelt"),
-       encoding: Encoding::Utf8,
-     } 
+    Metadata {
+      name: String::from("immowelt"),
+      encoding: Encoding::Utf8,
+    }
   }
 
   fn selector(&self) -> &'static str {
@@ -50,6 +49,7 @@ impl Crawler for ImmoWelt {
     Ok(PropertyData {
       price: Self::parse_number(rent)?,
       squaremeters: Self::parse_number(squaremeters)?,
+      plot_squaremeters: None,
       address: cleaned_address,
       title,
       rooms: Self::parse_number(rooms)?,

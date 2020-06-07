@@ -35,6 +35,7 @@ fn main() {
   let thread_count = app_config.thread_count as usize;
   let barrier = Arc::new(Barrier::new(thread_count + 1));
   let mut last_properties = Vec::<Property>::new();
+  let mut initial_run = app_config.initial_run;
   loop {
     println!();
 
@@ -88,23 +89,28 @@ fn main() {
     }
     println!("After deduplication: {}", properties_deduped.len());
 
-    // geocode all new properties
-    let properties_geocoded = if app_config.geocoding.enabled {
-      geocode_properties(&properties_deduped, &app_config)
+    if initial_run {
+      println!("initial run - will not notify observers.");
+      initial_run = false
     } else {
-      properties_deduped
-    };
+      // geocode all new properties
+      let properties_geocoded = if app_config.geocoding.enabled {
+        geocode_properties(&properties_deduped, &app_config)
+      } else {
+        properties_deduped
+      };
 
-    // notify observers
-    if app_config.test {
-      println!("this is a test run, will not notify observers.");
-      for property in properties_geocoded {
-        println!("found property: {:?}", property);
-      }
-    } else {
-      for property in properties_geocoded {
-        for observer in &observers {
-          observer.observation(&app_config, &property);
+      // notify observers
+      if app_config.test {
+        println!("this is a test run, will not notify observers.");
+        for property in properties_geocoded {
+          println!("found property: {:?}", property);
+        }
+      } else {
+        for property in properties_geocoded {
+          for observer in &observers {
+            observer.observation(&app_config, &property);
+          }
         }
       }
     }
@@ -113,10 +119,8 @@ fn main() {
     last_properties = properties.to_vec();
 
     // pause for 5 minutes
-    println!(
-      "run finished - will now wait for {} seconds ...",
-      app_config.interval
-    );
+    println!("run finished.");
+    println!("will now wait for {} seconds ...", app_config.interval);
     std::thread::sleep(std::time::Duration::from_secs(app_config.interval));
   }
 }

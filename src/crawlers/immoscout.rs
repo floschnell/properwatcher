@@ -3,10 +3,10 @@ extern crate reqwest;
 extern crate std;
 
 use super::{Crawler, Error};
-use crate::models::{PropertyData, PropertyType, ContractType};
-use kuchiki::{ElementData, NodeDataRef};
 use crate::crawlers::Metadata;
 use crate::models::Encoding;
+use crate::models::{ContractType, PropertyData, PropertyType};
+use kuchiki::{ElementData, NodeDataRef};
 
 pub struct ImmoScout {}
 
@@ -29,6 +29,9 @@ impl Crawler for ImmoScout {
       &result,
       ".result-list-entry__criteria dl:nth-child(3) dd .onlyLarge",
     )?;
+    let plot_squaremeters =
+      Self::get_text(&result, ".result-list-entry__criteria dl:nth-child(4) dd")
+        .map_or(None, |s| Self::parse_number(s).map_or(None, |f| Some(f)));
     let title = Self::get_text(&result, ".result-list-entry__brand-title")?;
     let address = Self::get_text(&result, ".result-list-entry__map-link")?;
     let externalid = Self::get_attr(&result, None, "data-obid")?
@@ -39,6 +42,7 @@ impl Crawler for ImmoScout {
       squaremeters: Self::parse_number(squaremeters)?,
       address,
       title,
+      plot_squaremeters,
       rooms: Self::parse_number(rooms)?,
       externalid,
       property_type: PropertyType::Flat,

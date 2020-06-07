@@ -4,11 +4,11 @@ extern crate reqwest;
 extern crate std;
 
 use super::{Crawler, Error};
-use crate::models::{PropertyData, PropertyType, ContractType};
-use kuchiki::{ElementData, NodeDataRef};
-use std::ops::Deref;
 use crate::crawlers::Metadata;
 use crate::models::Encoding;
+use crate::models::{ContractType, PropertyData, PropertyType};
+use kuchiki::{ElementData, NodeDataRef};
+use std::ops::Deref;
 
 pub struct Sueddeutsche {
   pub brackets: regex::Regex,
@@ -23,7 +23,6 @@ impl Sueddeutsche {
 }
 
 impl Crawler for Sueddeutsche {
-  
   fn metadata(&self) -> Metadata {
     Metadata {
       name: String::from("sueddeutsche"),
@@ -57,6 +56,7 @@ impl Crawler for Sueddeutsche {
       (&Some(squaremeters), &Some(rooms), &Some(address)) => Ok(PropertyData {
         price: Self::parse_number(rent)?,
         squaremeters: Self::parse_number(squaremeters.deref().to_owned())?,
+        plot_squaremeters: None,
         address: self.brackets.replace_all(address.deref(), "").into_owned(),
         title,
         rooms: Self::parse_number(rooms.deref().to_owned())?,

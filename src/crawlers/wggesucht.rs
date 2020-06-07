@@ -3,15 +3,14 @@ extern crate reqwest;
 extern crate std;
 
 use super::{Crawler, Error};
-use crate::models::{PropertyData, PropertyType, ContractType};
-use kuchiki::{ElementData, NodeDataRef};
 use crate::crawlers::Metadata;
 use crate::models::Encoding;
+use crate::models::{ContractType, PropertyData, PropertyType};
+use kuchiki::{ElementData, NodeDataRef};
 
 pub struct WGGesucht {}
 
 impl Crawler for WGGesucht {
-  
   fn metadata(&self) -> Metadata {
     Metadata {
       name: String::from("wggesucht"),
@@ -42,6 +41,7 @@ impl Crawler for WGGesucht {
       Ok(PropertyData {
         price: Self::parse_number(rent)?,
         squaremeters: Self::parse_number(squaremeters)?,
+        plot_squaremeters: None,
         address,
         title,
         rooms: Self::parse_number(rooms)?,
