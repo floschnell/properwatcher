@@ -66,6 +66,7 @@ impl Crawler for Wohnungsboerse {
         externalid: externalid.to_string(),
         property_type: PropertyType::Flat,
         contract_type: ContractType::Rent,
+        tags: vec![],
       }),
       None => Err(Error {
         message: "Could not find an external id".to_string(),

@@ -67,6 +67,7 @@ pub struct PropertyData {
   pub title: String,
   pub externalid: String,
   pub rooms: f32,
+  pub tags: Vec<String>,
 }
 
 impl PartialEq for Property {
@@ -173,6 +174,7 @@ mod tests {
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
+        tags: vec![],
       }),
       location: None,
     };
@@ -191,6 +193,7 @@ mod tests {
         rooms: 1.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
+        tags: vec![],
       }),
       location: None,
     };
@@ -214,6 +217,7 @@ mod tests {
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
+        tags: vec![],
       }),
       location: None,
     };
@@ -232,6 +236,7 @@ mod tests {
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
+        tags: vec![],
       }),
       location: None,
     };
@@ -255,6 +260,7 @@ mod tests {
         rooms: 3.,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
+        tags: vec![],
       }),
       location: None,
     };
@@ -273,6 +279,7 @@ mod tests {
         rooms: 3.5,
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
+        tags: vec![],
       }),
       location: None,
     };
@@ -317,6 +324,7 @@ mod tests {
         rooms: 3.,
         contract_type: ContractType::Buy,
         property_type: PropertyType::House,
+        tags: vec![],
       }),
       location: None,
     };
@@ -335,6 +343,7 @@ mod tests {
         plot_squaremeters: Some(200.0),
         contract_type: ContractType::Buy,
         property_type: PropertyType::House,
+        tags: vec![],
       }),
       location: None,
     };

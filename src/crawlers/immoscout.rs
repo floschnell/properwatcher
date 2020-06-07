@@ -37,6 +37,10 @@ impl Crawler for ImmoScout {
     let externalid = Self::get_attr(&result, None, "data-obid")?
       .trim()
       .to_owned();
+    let tags = Self::get_texts(&result, ".result-list-entry__secondary-criteria li")?
+      .into_iter()
+      .filter(|tag| tag != "...")
+      .collect();
     Ok(PropertyData {
       price: Self::parse_number(rent)?,
       squaremeters: Self::parse_number(squaremeters)?,
@@ -47,6 +51,7 @@ impl Crawler for ImmoScout {
       externalid,
       property_type: PropertyType::Flat,
       contract_type: ContractType::Rent,
+      tags,
     })
   }
 }

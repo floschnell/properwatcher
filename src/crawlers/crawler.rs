@@ -76,6 +76,21 @@ pub trait Crawler: Send + Sync {
     }
   }
 
+  fn get_texts(
+    result: &NodeDataRef<ElementData>,
+    selector: &'static str,
+  ) -> Result<Vec<String>, Error>
+  where
+    Self: Sized,
+  {
+    match result.as_node().select(selector) {
+      Ok(elements) => Ok(elements.map(|e| e.text_contents()).collect()),
+      Err(()) => Err(Error {
+        message: format!("Could not find selector '{}'!", selector),
+      }),
+    }
+  }
+
   fn parse_number(number_as_str: String) -> Result<f32, Error>
   where
     Self: Sized,

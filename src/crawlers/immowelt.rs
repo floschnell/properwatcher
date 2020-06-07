@@ -56,6 +56,7 @@ impl Crawler for ImmoWelt {
       externalid,
       property_type: PropertyType::Flat,
       contract_type: ContractType::Rent,
+      tags: vec![],
     })
   }
 }

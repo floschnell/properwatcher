@@ -48,6 +48,7 @@ impl Crawler for WGGesucht {
         externalid,
         property_type: PropertyType::Flat,
         contract_type: ContractType::Rent,
+        tags: vec![],
       })
     }
   }
