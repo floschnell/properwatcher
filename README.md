@@ -21,7 +21,8 @@ Since the tool is written in Rust it comes with a very low memory and cpu footpr
 ### Supported Sinks
 
 - Firebase: Cloud Firestore
-- Telegram Chat via own bot
+- Telegram: Sends messages to any Telegram chat
+- Mail: Sends mails via SMTP
 
 ## Usage
 
