@@ -5,7 +5,7 @@ use config::{Config, File};
 pub struct TelegramConfig {
   pub enabled: bool,
   pub api_key: String,
-  pub chat_id: i64,
+  pub chat_id: String,
 }
 
 #[derive(Clone, Debug)]
@@ -22,6 +22,14 @@ pub struct DatabaseConfig {
 }
 
 #[derive(Clone, Debug)]
+pub struct MailConfig {
+  pub enabled: bool,
+  pub smtp_server: String,
+  pub username: String,
+  pub password: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct ApplicationConfig {
   pub test: bool,
   pub interval: u64,
@@ -31,6 +39,7 @@ pub struct ApplicationConfig {
   pub telegram: TelegramConfig,
   pub crawler_configs: Vec<CrawlerConfig>,
   pub database: DatabaseConfig,
+  pub mail: MailConfig,
 }
 
 pub fn read(config_path: String) -> ApplicationConfig {
@@ -43,7 +52,12 @@ pub fn read(config_path: String) -> ApplicationConfig {
 
   let telegram_enabled = config.get("telegram.enabled").unwrap_or(false);
   let telegram_api_key = config.get("telegram.api_key").unwrap_or(String::from(""));
-  let telegram_chat_id = config.get("telegram.chat_id").unwrap_or(0);
+  let telegram_chat_id = config.get("telegram.chat_id").unwrap_or(String::from(""));
+
+  let mail_enabled = config.get("mail.enabled").unwrap_or(false);
+  let mail_smtp_server = config.get("mail.smtp_server").unwrap_or(String::from(""));
+  let mail_username = config.get("mail.username").unwrap_or(String::from(""));
+  let mail_password = config.get("mail.password").unwrap_or(String::from(""));
 
   let geocoding_enabled = config.get("geocoding.enabled").unwrap_or(false);
   let geocoding_nominatim_url: String = config
@@ -118,6 +132,12 @@ pub fn read(config_path: String) -> ApplicationConfig {
       enabled: database_enabled,
       auth_json_path: database_auth_json_path,
       collection_name: database_collection_name,
+    },
+    mail: MailConfig {
+      enabled: mail_enabled,
+      smtp_server: mail_smtp_server,
+      username: mail_username,
+      password: mail_password,
     },
     crawler_configs,
   }

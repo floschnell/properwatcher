@@ -49,9 +49,23 @@ nominatim_url = "https://nominatim.openstreetmap.org/search"
 
 # found properties can be sent to a given Telegram channel
 # therefore, you first need to create a Telegram bot and start a conversation with it.
+# you can follow this tutorial's first two steps to create a bot token and chat id:
+# https://www.shellhacks.com/telegram-api-send-message-personal-notification-bot/
 [telegram]
 enabled = false
 # API key of your Telegram bot
 api_key = "<telegram-bot-api-key>"
 # chat id of the conversation with your private bot
-chat_id = 0
+# can also be the id of a private group chat
+chat_id = "<chat-id>"
+
+# found properties can be forwarded to you via email
+[mail]
+enabled = false
+smtp_server = "smtp.gmail.com"
+# your username - in case of gmail, your mail address
+# this is also where the notification mails are being sent to
+username = "user"
+# if you're going with gmail, you need to create an application specific password
+# see here: https://support.google.com/mail/answer/185833?hl=en
+password = "pass"

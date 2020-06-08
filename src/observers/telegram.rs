@@ -53,7 +53,7 @@ impl Observer for Telegram {
 }
 
 fn send_telegram_message(app_config: &ApplicationConfig, msg: String) -> () {
-  let chat_id = app_config.telegram.chat_id;
+  let chat_id = &app_config.telegram.chat_id;
   let api_key = &app_config.telegram.api_key;
 
   let client = reqwest::blocking::Client::new();
