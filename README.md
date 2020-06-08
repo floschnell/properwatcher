@@ -20,9 +20,9 @@ Since the tool is written in Rust it comes with a very low memory and cpu footpr
 
 ### Supported Observers
 
-- Firebase: Cloud Firestore
-- Telegram: Sends messages to any Telegram chat
-- Mail: Sends mails via SMTP
+- **Firebase**: Cloud Firestore
+- **Telegram**: Sends messages to any Telegram chat
+- **Mail**: Sends mails via SMTP
 
 ## Usage
 
