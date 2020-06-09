@@ -1,9 +1,10 @@
 mod configuration;
 mod crawlers;
-mod geocode;
+mod enrichers;
 mod models;
 mod observers;
 
+use crate::enrichers::get_enrichers;
 use crate::models::Property;
 use crate::observers::get_observers;
 use configuration::ApplicationConfig;
@@ -27,6 +28,7 @@ fn main() {
   println!("success.");
 
   let observers = get_observers(&app_config);
+  let enrichers = get_enrichers();
 
   if app_config.test {
     println!("----- Running in TEST mode! -----");
@@ -94,20 +96,21 @@ fn main() {
       initial_run = false
     } else {
       // geocode all new properties
-      let properties_geocoded = if app_config.geocoding.enabled {
-        geocode_properties(&properties_deduped, &app_config)
-      } else {
-        properties_deduped
-      };
+      let mut properties_enriched: Vec<Property> = vec![];
+      for property in properties_deduped {
+        for enricher in &enrichers {
+          properties_enriched.push(enricher.enrich(&app_config, &property));
+        }
+      }
 
       // notify observers
       if app_config.test {
         println!("this is a test run, will not notify observers.");
-        for property in properties_geocoded {
+        for property in properties_enriched {
           println!("found property: {:?}", property);
         }
       } else {
-        for property in properties_geocoded {
+        for property in properties_enriched {
           for observer in &observers {
             observer.observation(&app_config, &property);
           }
@@ -145,28 +148,6 @@ fn run_thread(
     }
   }
   properties
-}
-
-fn geocode_properties(results: &Vec<Property>, config: &ApplicationConfig) -> Vec<Property> {
-  let mut enriched_properties = Vec::new();
-  print!("geocoding properties ...");
-  for property in results {
-    let geocode_result_opt = match &property.data {
-      Some(data) => match geocode::geocode(&config.geocoding.nominatim_url, &data.address) {
-        Ok(coords) => Some(coords),
-        Err(_) => None,
-      },
-      None => None,
-    };
-    let enriched_property = match geocode_result_opt {
-      Some(geocode_result) => property.locate(&geocode_result.coord, geocode_result.uncertainty),
-      None => property.clone(),
-    };
-    enriched_properties.push(enriched_property);
-    print!(".");
-  }
-  println!();
-  enriched_properties
 }
 
 fn process_config(

@@ -16,18 +16,47 @@ initial_run = false
 # run every 5 minutes (300 seconds)
 interval = 300
 
+#-------------
+# watchers
+#-------------
+
 # there can be multiple watcher blocks
 # a watcher defines an endpoint that will be scraped in the specified time interval
 # properties found on any of the watched endpoints will be merged into one big result set
-# available crawlers are: immoscout, immowelt, wohnungsboerse, wggesucht, sueddeutsche
-# available contract_types: buy, rent
-# available property_types: house, flat
 [[watcher]]
+# this will be added as metadata to each property that is seen by this watcher
 city = "Munich"
+# this is the endpoint that you want to scrape
+# make sure it contains your search criteria
 address = "https://www.immobilienscout24.de/Suche/de/bayern/muenchen-kreis/wohnung-mieten?numberofrooms=2.0-&price=-1500.0&livingspace=40.0-&enteredFrom=one_step_search"
+# available crawlers are: immoscout, immowelt, wohnungsboerse, wggesucht, sueddeutsche
 crawler = "immoscout"
+# available contract_types: buy, rent
 contract_type = "rent"
+# available property_types: house, flat
 property_type = "flat"
+
+#-------------
+# enrichers
+#-------------
+
+# found properties can be geocoded (address will be translated into lat/long coordinates).
+# this will decrease notification speed, because properwatcher will pause for 1 second
+# after each request (see usage policy of nominatim)
+[geocoding]
+enabled = false
+# nominatim API will be used for geocoding
+# either use the global one, or you can also use a local instance
+nominatim_url = "https://nominatim.openstreetmap.org/search"
+# nominatim is a public free API used by openstreetmap
+# we provide a custom user agent here, so they can rate limit their usage
+# and block applications that exhaustively access their endpoints
+# feel free to append a custom string i.e. properwatcher-flo
+user_agent = "properwatcher"
+
+#-------------
+# observers
+#-------------
 
 # optionally the found properties can be stored in a firebase database.
 # the database will also be used to deduplicate found entries.
@@ -39,13 +68,6 @@ enabled = false
 auth_json_path = "firebase.json"
 # collection name
 collection_name = "properties"
-
-# found properties can be geocoded (address will be translated into lat/long coordinates).
-[geocoding]
-enabled = false
-# nominatim API will be used for geocoding
-# either use the global one, or you can also use a local instance
-nominatim_url = "https://nominatim.openstreetmap.org/search"
 
 # found properties can be sent to a given Telegram channel
 # therefore, you first need to create a Telegram bot and start a conversation with it.

@@ -11,6 +11,7 @@ pub struct TelegramConfig {
 #[derive(Clone, Debug)]
 pub struct GeocodingConfig {
   pub enabled: bool,
+  pub user_agent: String,
   pub nominatim_url: String,
 }
 
@@ -60,6 +61,9 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let mail_password = config.get("mail.password").unwrap_or(String::from(""));
 
   let geocoding_enabled = config.get("geocoding.enabled").unwrap_or(false);
+  let geocoding_user_agent = config
+    .get("geocoding.user_agent")
+    .unwrap_or(String::from("propertwatcher"));
   let geocoding_nominatim_url: String = config
     .get("geocoding.nominatim_url")
     .unwrap_or(String::new());
@@ -122,6 +126,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
     geocoding: GeocodingConfig {
       enabled: geocoding_enabled,
       nominatim_url: geocoding_nominatim_url,
+      user_agent: geocoding_user_agent,
     },
     telegram: TelegramConfig {
       enabled: telegram_enabled,

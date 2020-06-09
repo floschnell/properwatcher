@@ -1,7 +1,7 @@
-use crate::geocode::Coordinate;
 use chrono::prelude::*;
 use regex::Regex;
 use serde_derive::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub enum PropertyType {
@@ -51,6 +51,7 @@ pub struct Property {
   pub city: String,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub data: Option<PropertyData>,
+  pub enrichments: HashMap<String, String>,
   #[serde(skip_serializing_if = "Option::is_none")]
   pub location: Option<Location>,
 }
@@ -102,6 +103,7 @@ impl Property {
       data: None,
       city,
       location: None,
+      enrichments: HashMap::new(),
     }
   }
 
@@ -112,20 +114,7 @@ impl Property {
       date: self.date,
       data: Some(data.clone()),
       location: self.location.clone(),
-    }
-  }
-
-  pub fn locate(&self, coord: &Coordinate, uncertainty: f32) -> Property {
-    Property {
-      city: self.city.clone(),
-      source: self.source.to_owned(),
-      date: self.date,
-      data: self.data.clone(),
-      location: Some(Location {
-        latitude: coord.latitude,
-        longitude: coord.longitude,
-        uncertainty,
-      }),
+      enrichments: self.enrichments.clone(),
     }
   }
 }
@@ -136,6 +125,7 @@ mod tests {
   use crate::models::Property;
   use crate::models::PropertyData;
   use crate::models::PropertyType;
+  use std::collections::HashMap;
 
   #[test]
   fn compare_flat_too_simple() {
@@ -145,6 +135,7 @@ mod tests {
       date: 0,
       data: None,
       location: None,
+      enrichments: HashMap::new(),
     };
 
     let flat_b = Property {
@@ -153,6 +144,7 @@ mod tests {
       date: 0,
       data: None,
       location: None,
+      enrichments: HashMap::new(),
     };
 
     assert_ne!(flat_a, flat_b);
@@ -177,6 +169,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     let flat_b = Property {
@@ -196,6 +189,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     assert_eq!(flat_a, flat_b);
@@ -220,6 +214,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     let flat_b = Property {
@@ -239,6 +234,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     assert_eq!(flat_a, flat_b);
@@ -263,6 +259,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     let flat_b = Property {
@@ -282,6 +279,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     assert_eq!(flat_a, flat_b);
@@ -295,6 +293,7 @@ mod tests {
       date: 0,
       data: None,
       location: None,
+      enrichments: HashMap::new(),
     };
 
     let flat_b = Property {
@@ -303,6 +302,7 @@ mod tests {
       date: 0,
       data: None,
       location: None,
+      enrichments: HashMap::new(),
     };
 
     assert_ne!(flat_a, flat_b);
@@ -327,6 +327,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     let flat_b = Property {
@@ -346,6 +347,7 @@ mod tests {
         tags: vec![],
       }),
       location: None,
+      enrichments: HashMap::new(),
     };
 
     assert_ne!(flat_a, flat_b);
