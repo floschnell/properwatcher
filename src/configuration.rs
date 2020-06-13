@@ -23,6 +23,12 @@ pub struct DatabaseConfig {
 }
 
 #[derive(Clone, Debug)]
+pub struct CSVConfig {
+  pub enabled: bool,
+  pub filename: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct MailConfig {
   pub enabled: bool,
   pub smtp_server: String,
@@ -41,6 +47,7 @@ pub struct ApplicationConfig {
   pub crawler_configs: Vec<CrawlerConfig>,
   pub database: DatabaseConfig,
   pub mail: MailConfig,
+  pub csv: CSVConfig,
 }
 
 pub fn read(config_path: String) -> ApplicationConfig {
@@ -59,6 +66,11 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let mail_smtp_server = config.get("mail.smtp_server").unwrap_or(String::from(""));
   let mail_username = config.get("mail.username").unwrap_or(String::from(""));
   let mail_password = config.get("mail.password").unwrap_or(String::from(""));
+
+  let csv_enabled = config.get("csv.enabled").unwrap_or(false);
+  let csv_filename = config
+    .get("csv.filename")
+    .unwrap_or(String::from("properwatcher.csv"));
 
   let geocoding_enabled = config.get("geocoding.enabled").unwrap_or(false);
   let geocoding_user_agent = config
@@ -143,6 +155,10 @@ pub fn read(config_path: String) -> ApplicationConfig {
       smtp_server: mail_smtp_server,
       username: mail_username,
       password: mail_password,
+    },
+    csv: CSVConfig {
+      enabled: csv_enabled,
+      filename: csv_filename,
     },
     crawler_configs,
   }

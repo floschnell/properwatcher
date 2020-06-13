@@ -49,10 +49,11 @@ pub struct Property {
   pub source: String,
   pub date: i64,
   pub city: String,
-  #[serde(skip_serializing_if = "Option::is_none")]
+  //  #[serde(skip_serializing_if = "Option::is_none")]
   pub data: Option<PropertyData>,
+  #[serde(skip_serializing)]
   pub enrichments: HashMap<String, String>,
-  #[serde(skip_serializing_if = "Option::is_none")]
+  //  #[serde(skip_serializing_if = "Option::is_none")]
   pub location: Option<Location>,
 }
 
@@ -62,12 +63,13 @@ pub struct PropertyData {
   pub contract_type: ContractType,
   pub property_type: PropertyType,
   pub squaremeters: f32,
-  #[serde(skip_serializing_if = "Option::is_none")]
+  // #[serde(skip_serializing_if = "Option::is_none")]
   pub plot_squaremeters: Option<f32>,
   pub address: String,
   pub title: String,
   pub externalid: String,
   pub rooms: f32,
+  #[serde(skip_serializing)]
   pub tags: Vec<String>,
 }
 

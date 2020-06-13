@@ -73,34 +73,38 @@ pub struct Geocoder {}
 
 impl Enricher for Geocoder {
   fn enrich(&self, app_config: &ApplicationConfig, property: &Property) -> Property {
-    let geocode_result_opt = match &property.data {
-      Some(data) => match geocode(app_config, &data.address) {
-        Ok(coords) => Some(coords),
-        Err(e) => {
-          println!("error during geocoding: {:?}", e);
-          None
+    if app_config.geocoding.enabled {
+      let geocode_result_opt = match &property.data {
+        Some(data) => match geocode(app_config, &data.address) {
+          Ok(coords) => Some(coords),
+          Err(e) => {
+            println!("error during geocoding: {:?}", e);
+            None
+          }
+        },
+        None => None,
+      };
+      match geocode_result_opt {
+        Some(geocode_result) => {
+          let mut property_enriched = property.clone();
+          property_enriched.enrichments.insert(
+            String::from("latitude"),
+            geocode_result.coord.latitude.to_string(),
+          );
+          property_enriched.enrichments.insert(
+            String::from("longitude"),
+            geocode_result.coord.longitude.to_string(),
+          );
+          property_enriched.enrichments.insert(
+            String::from("uncertainty"),
+            geocode_result.uncertainty.to_string(),
+          );
+          property_enriched
         }
-      },
-      None => None,
-    };
-    match geocode_result_opt {
-      Some(geocode_result) => {
-        let mut property_enriched = property.clone();
-        property_enriched.enrichments.insert(
-          String::from("latitude"),
-          geocode_result.coord.latitude.to_string(),
-        );
-        property_enriched.enrichments.insert(
-          String::from("longitude"),
-          geocode_result.coord.longitude.to_string(),
-        );
-        property_enriched.enrichments.insert(
-          String::from("uncertainty"),
-          geocode_result.uncertainty.to_string(),
-        );
-        property_enriched
+        None => property.clone(),
       }
-      None => property.clone(),
+    } else {
+      property.clone()
     }
   }
 }

@@ -110,9 +110,9 @@ fn main() {
           println!("found property: {:?}", property);
         }
       } else {
-        for property in properties_enriched {
+        for ref property in properties_enriched {
           for observer in &observers {
-            observer.observation(&app_config, &property);
+            observer.observation(&app_config, property);
           }
         }
       }
