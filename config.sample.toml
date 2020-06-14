@@ -5,7 +5,7 @@
 # during a testrun no sink will be triggered
 test = false
 
-# number of threads on which the crawlers will be executed
+# number of threads on which the watchers will be executed
 thread_count = 4
 
 # if true, the first run will be used to setup
@@ -91,3 +91,12 @@ username = "user"
 # if you're going with gmail, you need to create an application specific password
 # see here: https://support.google.com/mail/answer/185833?hl=en
 password = "pass"
+
+# found properties can be appended to a CSV file
+# this option is recommended for easy dataset inspection via:
+# tableau or microsoft's power bi
+[csv]
+enabled = false
+# output file
+# new entries will be appended, if the file already exists
+filename = "properwatcher.csv"

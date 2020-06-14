@@ -112,7 +112,14 @@ fn main() {
       } else {
         for ref property in properties_enriched {
           for observer in &observers {
-            observer.observation(&app_config, property);
+            let result = observer.observation(&app_config, property);
+            match result {
+              Err(e) => eprintln!(
+                "Error '{}' occurred, while triggering observer with property: {:?}",
+                &e.message, &property
+              ),
+              Ok(_) => (),
+            }
           }
         }
       }

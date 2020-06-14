@@ -1,4 +1,5 @@
 use crate::models::Property;
+use crate::observers::Error;
 use crate::observers::Observer;
 use crate::ApplicationConfig;
 use firestore_db_and_auth::{documents, Credentials, ServiceSession};
@@ -24,7 +25,7 @@ impl Firebase {
 }
 
 impl Observer for Firebase {
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> () {
+  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     if app_config.database.enabled {
       let id = property.data.as_ref().map(|x| x.externalid.to_owned());
       let document_id = id.map(|x| format!("{}-{}", property.source, x));
@@ -40,5 +41,6 @@ impl Observer for Firebase {
         None => (),
       }
     }
+    Ok(())
   }
 }

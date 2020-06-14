@@ -7,6 +7,7 @@ mod telegram;
 pub use crate::observers::csv::CSV;
 pub use crate::observers::firebase::Firebase;
 pub use crate::observers::mail::Mail;
+pub use crate::observers::observer::Error;
 pub use crate::observers::observer::Observer;
 pub use crate::observers::telegram::Telegram;
 

@@ -1,7 +1,8 @@
-use crate::models::{ContractType, Property, PropertyType, PropertyData};
+use crate::models::{ContractType, Property, PropertyData, PropertyType};
+use crate::observers::Error;
 use crate::observers::Observer;
 use crate::ApplicationConfig;
-use lettre::{smtp::authentication::Credentials, SmtpClient, Transport };
+use lettre::{smtp::authentication::Credentials, SmtpClient, Transport};
 use lettre_email::EmailBuilder;
 
 use num_format::{Locale, ToFormattedString};
@@ -9,14 +10,17 @@ use num_format::{Locale, ToFormattedString};
 pub struct Mail {}
 
 impl Observer for Mail {
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> () {
+  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     if app_config.mail.enabled && property.data.is_some() {
       let message = build_message(property);
 
       let email = EmailBuilder::new()
         .to(app_config.mail.username.to_owned())
         .from(app_config.mail.username.to_owned())
-        .subject(format!("Found new flat: {}", property.data.as_ref().unwrap().title))
+        .subject(format!(
+          "Found new flat: {}",
+          property.data.as_ref().unwrap().title
+        ))
         .html(message)
         .build();
 
@@ -36,6 +40,7 @@ impl Observer for Mail {
         println!("Could not send email: {:?}", result);
       }
     }
+    Ok(())
   }
 }
 
@@ -74,7 +79,10 @@ fn build_message(property: &Property) -> String {
     ));
   }
   msg.push_str("<br />");
-  msg.push_str(&format!("<a href='{}' target='_blank'>Find more information here ...</a>", url));
+  msg.push_str(&format!(
+    "<a href='{}' target='_blank'>Find more information here ...</a>",
+    url
+  ));
   msg
 }
 

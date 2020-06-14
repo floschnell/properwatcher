@@ -1,4 +1,5 @@
 use crate::models::{ContractType, Property, PropertyType};
+use crate::observers::Error;
 use crate::observers::Observer;
 use crate::ApplicationConfig;
 use std::collections::HashMap;
@@ -8,7 +9,7 @@ use num_format::{Locale, ToFormattedString};
 pub struct Telegram {}
 
 impl Observer for Telegram {
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> () {
+  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     if app_config.telegram.enabled {
       match property.data {
         Some(ref property_data) => {
@@ -49,6 +50,7 @@ impl Observer for Telegram {
         None => (),
       }
     }
+    Ok(())
   }
 }
 
