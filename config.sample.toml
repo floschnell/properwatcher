@@ -12,6 +12,10 @@ thread_count = 4
 # only on the second run observers will be informed
 initial_run = false
 
+# whether properwatcher will continue to run after first loop
+# if true, properwatcher will wait for <interval> seconds before it will trigger the next run
+run_periodically = true
+
 # set how often the scraping process will be triggered
 # run every 5 minutes (300 seconds)
 interval = 300
