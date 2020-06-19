@@ -1,34 +1,35 @@
 use crate::crawlers::Config as CrawlerConfig;
 use config::{Config, File};
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TelegramConfig {
   pub enabled: bool,
   pub api_key: String,
   pub chat_id: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeocodingConfig {
   pub enabled: bool,
   pub user_agent: String,
   pub nominatim_url: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DatabaseConfig {
   pub enabled: bool,
   pub auth_json_path: String,
   pub collection_name: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CSVConfig {
   pub enabled: bool,
   pub filename: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct MailConfig {
   pub enabled: bool,
   pub smtp_server: String,
@@ -36,18 +37,96 @@ pub struct MailConfig {
   pub password: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct DynamoDbConfig {
+  pub enabled: bool,
+  pub table_name: String,
+  pub region: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApplicationConfig {
+  #[serde(default = "default_test")]
   pub test: bool,
+  #[serde(default = "default_run_periodically")]
+  pub run_periodically: bool,
+  #[serde(default = "default_interval")]
   pub interval: u64,
+  #[serde(default = "default_initial_run")]
   pub initial_run: bool,
+  #[serde(default = "default_thread_count")]
   pub thread_count: i32,
+  #[serde(default = "default_geocoding")]
   pub geocoding: GeocodingConfig,
+  #[serde(default = "default_telegram")]
   pub telegram: TelegramConfig,
-  pub crawler_configs: Vec<CrawlerConfig>,
+  pub watchers: Vec<CrawlerConfig>,
+  #[serde(default = "default_database")]
   pub database: DatabaseConfig,
+  #[serde(default = "default_mail")]
   pub mail: MailConfig,
+  #[serde(default = "default_csv")]
   pub csv: CSVConfig,
+  #[serde(default = "default_dynamodb")]
+  pub dynamodb: DynamoDbConfig,
+}
+
+fn default_test() -> bool {
+  false
+}
+fn default_run_periodically() -> bool {
+  false
+}
+fn default_interval() -> u64 {
+  300
+}
+fn default_initial_run() -> bool {
+  false
+}
+fn default_thread_count() -> i32 {
+  1
+}
+fn default_geocoding() -> GeocodingConfig {
+  GeocodingConfig {
+    enabled: false,
+    nominatim_url: String::from(""),
+    user_agent: String::from("properwatcher"),
+  }
+}
+fn default_telegram() -> TelegramConfig {
+  TelegramConfig {
+    enabled: false,
+    api_key: String::from(""),
+    chat_id: String::from(""),
+  }
+}
+fn default_database() -> DatabaseConfig {
+  DatabaseConfig {
+    enabled: false,
+    auth_json_path: String::from(""),
+    collection_name: String::from(""),
+  }
+}
+fn default_dynamodb() -> DynamoDbConfig {
+  DynamoDbConfig {
+    enabled: false,
+    table_name: String::from("properties"),
+    region: String::from("eu-central-1"),
+  }
+}
+fn default_mail() -> MailConfig {
+  MailConfig {
+    enabled: false,
+    smtp_server: String::from(""),
+    username: String::from(""),
+    password: String::from(""),
+  }
+}
+fn default_csv() -> CSVConfig {
+  CSVConfig {
+    enabled: false,
+    filename: String::from(""),
+  }
 }
 
 pub fn read(config_path: String) -> ApplicationConfig {
@@ -57,6 +136,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let thread_count = config.get("thread_count").unwrap_or(2);
   let interval = config.get("interval").unwrap_or(300);
   let initial_run = config.get("initial_run").unwrap_or(false);
+  let run_periodically = config.get("run_periodically").unwrap_or(true);
 
   let telegram_enabled = config.get("telegram.enabled").unwrap_or(false);
   let telegram_api_key = config.get("telegram.api_key").unwrap_or(String::from(""));
@@ -87,6 +167,14 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let database_collection_name = config
     .get("database.collection_name")
     .unwrap_or(String::from("properties"));
+
+  let dynamodb_enabled = config.get("dynamodb.enabled").unwrap_or(false);
+  let dynamodb_table_name = config
+    .get("dynamodb.table_name")
+    .unwrap_or(String::from("properties"));
+  let dynamodb_region = config
+    .get("dynamodb.region")
+    .unwrap_or(String::from("eu-central-1"));
 
   let mut crawler_configs: Vec<CrawlerConfig> = vec![];
   let watcher_arr = config.get_array("watcher").unwrap();
@@ -135,6 +223,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
     interval,
     initial_run,
     thread_count: thread_count,
+    run_periodically,
     geocoding: GeocodingConfig {
       enabled: geocoding_enabled,
       nominatim_url: geocoding_nominatim_url,
@@ -160,6 +249,11 @@ pub fn read(config_path: String) -> ApplicationConfig {
       enabled: csv_enabled,
       filename: csv_filename,
     },
-    crawler_configs,
+    watchers: crawler_configs,
+    dynamodb: DynamoDbConfig {
+      enabled: dynamodb_enabled,
+      table_name: dynamodb_table_name,
+      region: dynamodb_region,
+    },
   }
 }

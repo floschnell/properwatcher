@@ -49,12 +49,10 @@ pub struct Property {
   pub source: String,
   pub date: i64,
   pub city: String,
-  //  #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub data: Option<PropertyData>,
   #[serde(skip_serializing)]
   pub enrichments: HashMap<String, String>,
-  //  #[serde(skip_serializing_if = "Option::is_none")]
-  pub location: Option<Location>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,7 +61,7 @@ pub struct PropertyData {
   pub contract_type: ContractType,
   pub property_type: PropertyType,
   pub squaremeters: f32,
-  // #[serde(skip_serializing_if = "Option::is_none")]
+  #[serde(skip_serializing_if = "Option::is_none")]
   pub plot_squaremeters: Option<f32>,
   pub address: String,
   pub title: String,
@@ -104,7 +102,6 @@ impl Property {
       source,
       data: None,
       city,
-      location: None,
       enrichments: HashMap::new(),
     }
   }
@@ -115,7 +112,6 @@ impl Property {
       source: self.source.to_owned(),
       date: self.date,
       data: Some(data.clone()),
-      location: self.location.clone(),
       enrichments: self.enrichments.clone(),
     }
   }
@@ -136,7 +132,6 @@ mod tests {
       city: String::from("Munich"),
       date: 0,
       data: None,
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -145,7 +140,6 @@ mod tests {
       city: String::from("Munich"),
       date: 0,
       data: None,
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -170,7 +164,6 @@ mod tests {
         property_type: PropertyType::Flat,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -190,7 +183,6 @@ mod tests {
         property_type: PropertyType::Flat,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -215,7 +207,6 @@ mod tests {
         property_type: PropertyType::Flat,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -235,7 +226,6 @@ mod tests {
         property_type: PropertyType::Flat,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -260,7 +250,6 @@ mod tests {
         property_type: PropertyType::Flat,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -280,7 +269,6 @@ mod tests {
         property_type: PropertyType::Flat,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -294,7 +282,6 @@ mod tests {
       city: String::from("Munich"),
       date: 0,
       data: None,
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -303,7 +290,6 @@ mod tests {
       city: String::from("Munich"),
       date: 0,
       data: None,
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -328,7 +314,6 @@ mod tests {
         property_type: PropertyType::House,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
@@ -348,7 +333,6 @@ mod tests {
         property_type: PropertyType::House,
         tags: vec![],
       }),
-      location: None,
       enrichments: HashMap::new(),
     };
 
