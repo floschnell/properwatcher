@@ -1,7 +1,8 @@
 use crate::models::ContractType;
 use crate::models::PropertyType;
+use serde_derive::{Deserialize, Serialize};
 
-#[derive(Clone, Debug)]
+#[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Config {
   pub address: String,
   pub city: String,
