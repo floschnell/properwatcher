@@ -2,7 +2,7 @@
 
 ![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
 
-The proper\[ty\]watcher is a lightweight Rust application that can monitor different property website queries. Once new properties are found on any of the sources, these changes can be forwarded to different sinks. So far a firebase database and/or a telegram chat can be configured.
+The proper\[ty\]watcher is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can enrich the property items (eg. geocoordinates) or observer changes (eg. send telegram notifications or populate a dabatase). The tool can be run either from command line, a provided docker image or an AWS lambda function.
 
 ## Features
 
