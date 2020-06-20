@@ -100,3 +100,17 @@ enabled = false
 # output file
 # new entries will be appended, if the file already exists
 filename = "properwatcher.csv"
+
+# especially useful if used as aws lambda function
+# simply permit access to dynamodb for the lambda function's role
+# if not run as lambda, you need to set environment variables:
+# - AWS_ACCESS_KEY_ID
+# - AWS_SECRET_ACCESS_KEY
+[dynamodb]
+enabled = false
+# name of the table in your dynamodb
+table_name = "properties"
+# the region your dynamodb is located in
+region = "eu-central-1"
+# only enrich and notify properties that are not yet in the database
+filter_existing = false

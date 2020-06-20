@@ -1,23 +1,38 @@
 mod configuration;
 mod crawlers;
 mod enrichers;
+mod filters;
 mod models;
 mod observers;
 
 use crate::enrichers::get_enrichers;
+use crate::filters::get_filters;
 use crate::models::Property;
 use crate::observers::get_observers;
 use configuration::ApplicationConfig;
 use crawlers::Config;
+use lambda_runtime::{error::HandlerError, lambda, Context};
 use std::env;
+use std::io::prelude::*;
 use std::sync::Mutex;
 use std::sync::{Arc, Barrier};
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Instant;
 
+fn run_lambda(e: ApplicationConfig, _: Context) -> Result<Vec<Property>, HandlerError> {
+  let properties = run(&e, true);
+  Ok(properties)
+}
+
 fn main() {
   let args: Vec<String> = env::args().collect();
+
+  if env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
+    println!("Running lambda ...");
+    lambda!(run_lambda);
+  }
+
   let config_path: String = args
     .get(1)
     .map(|arg| arg.to_owned())
@@ -27,8 +42,30 @@ fn main() {
   let app_config = configuration::read(config_path);
   println!("success.");
 
+  let mut initial_run = app_config.initial_run;
+  loop {
+    run(&app_config, !initial_run);
+    if initial_run {
+      initial_run = false;
+      println!("initial run finished.");
+    } else {
+      println!("run finished.");
+    }
+
+    // pause until next run
+    if app_config.run_periodically {
+      println!("will now wait for {} seconds ...", app_config.interval);
+      std::thread::sleep(std::time::Duration::from_secs(app_config.interval));
+    } else {
+      break;
+    }
+  }
+}
+
+fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> {
   let observers = get_observers(&app_config);
   let enrichers = get_enrichers();
+  let filters = get_filters(&app_config);
 
   if app_config.test {
     println!("----- Running in TEST mode! -----");
@@ -36,102 +73,95 @@ fn main() {
 
   let thread_count = app_config.thread_count as usize;
   let barrier = Arc::new(Barrier::new(thread_count + 1));
-  let mut last_properties = Vec::<Property>::new();
-  let mut initial_run = app_config.initial_run;
-  loop {
-    println!();
+  println!();
 
-    let crawl_start = Instant::now();
-    let guarded_configs = Arc::new(Mutex::new(app_config.crawler_configs.to_owned()));
+  let crawl_start = Instant::now();
+  let guarded_configs = Arc::new(Mutex::new(app_config.watchers.to_owned()));
 
-    // process all crawlers
-    let mut thread_handles: Vec<JoinHandle<Vec<Property>>> = vec![];
-    for i in 0..thread_count {
-      let inner_guarded_configs = guarded_configs.clone();
-      let inner_barrier = barrier.clone();
-      let cap_conf = app_config.clone();
-      let handle = thread::spawn(move || {
-        let properties = run_thread(inner_guarded_configs, i, &cap_conf);
-        inner_barrier.wait();
-        properties
-      });
-      &mut thread_handles.push(handle);
-    }
+  // process all crawlers
+  let mut thread_handles: Vec<JoinHandle<Vec<Property>>> = vec![];
+  for i in 0..thread_count {
+    let inner_guarded_configs = guarded_configs.clone();
+    let inner_barrier = barrier.clone();
+    let cap_conf = app_config.clone();
+    let handle = thread::spawn(move || {
+      let properties = run_thread(inner_guarded_configs, i, &cap_conf);
+      inner_barrier.wait();
+      properties
+    });
+    &mut thread_handles.push(handle);
+  }
 
-    // wait for all threads to finish
-    barrier.wait();
+  // wait for all threads to finish
+  barrier.wait();
 
-    // collect results
-    let properties = thread_handles
-      .into_iter()
-      .map(|h| h.join().unwrap_or_default())
-      .flatten()
-      .collect::<Vec<_>>();
+  // collect results
+  let mut properties = thread_handles
+    .into_iter()
+    .map(|h| h.join().unwrap_or_default())
+    .flatten()
+    .collect::<Vec<_>>();
 
-    let run_duration = crawl_start.elapsed();
-    println!(
-      "analyzed {} pages and found {} properties in {}.{} seconds.",
-      app_config.crawler_configs.len(),
-      properties.len(),
-      run_duration.as_secs(),
-      run_duration.subsec_millis()
-    );
+  let run_duration = crawl_start.elapsed();
+  println!(
+    "analyzed {} pages and found {} properties in {}.{} seconds.",
+    app_config.watchers.len(),
+    properties.len(),
+    run_duration.as_secs(),
+    run_duration.subsec_millis()
+  );
 
-    // filter results for duplicates
-    println!("Before deduplication: {}", properties.len());
-    let mut properties_deduped: Vec<_> = Vec::new();
-    for current_property in properties.to_vec() {
-      let has_been_sent = last_properties
-        .to_vec()
+  if !notify_observers {
+    println!("will not notify observers.");
+    properties
+  } else {
+    // process filters
+    let before = properties.len();
+    print!("filtering ... ");
+    let _ = std::io::stdout().flush();
+    for filter in filters {
+      properties = properties
         .into_iter()
-        .any(|previous_property| previous_property == current_property);
-      if !has_been_sent {
-        properties_deduped.push(current_property);
-      }
+        .filter(|property| filter.filter(&app_config, property))
+        .collect();
     }
-    println!("After deduplication: {}", properties_deduped.len());
+    println!("{} -> {} ... done. ", before, properties.len());
 
-    if initial_run {
-      println!("initial run - will not notify observers.");
-      initial_run = false
-    } else {
-      // geocode all new properties
-      let mut properties_enriched: Vec<Property> = vec![];
-      for property in properties_deduped {
-        for enricher in &enrichers {
-          properties_enriched.push(enricher.enrich(&app_config, &property));
-        }
+    // enricht all new properties
+    print!("enriching ... ");
+    let _ = std::io::stdout().flush();
+    for enricher in enrichers {
+      properties = properties
+        .into_iter()
+        .map(|property| enricher.enrich(&app_config, &property))
+        .collect();
+    }
+    println!("done.");
+
+    // notify observers
+    if app_config.test {
+      println!("this is a test run, will not notify observers.");
+      for ref property in &properties {
+        println!("found property: {:?}", property);
       }
-
-      // notify observers
-      if app_config.test {
-        println!("this is a test run, will not notify observers.");
-        for property in properties_enriched {
-          println!("found property: {:?}", property);
-        }
-      } else {
-        for ref property in properties_enriched {
-          for observer in &observers {
-            let result = observer.observation(&app_config, property);
-            match result {
-              Err(e) => eprintln!(
-                "Error '{}' occurred, while triggering observer with property: {:?}",
-                &e.message, &property
-              ),
-              Ok(_) => (),
-            }
+    } else {
+      print!("calling observers ... ");
+      let _ = std::io::stdout().flush();
+      for ref property in &properties {
+        for observer in &observers {
+          let result = observer.observation(&app_config, property);
+          match result {
+            Err(e) => eprintln!(
+              "Error '{}' occurred, while triggering observer with property: {:?}",
+              &e.message, &property
+            ),
+            Ok(_) => (),
           }
         }
       }
+      println!("done.");
     }
-
-    // remember properties so we can compare against them during the next run ...
-    last_properties = properties.to_vec();
-
-    // pause for 5 minutes
-    println!("run finished.");
-    println!("will now wait for {} seconds ...", app_config.interval);
-    std::thread::sleep(std::time::Duration::from_secs(app_config.interval));
+    properties
   }
 }
 
