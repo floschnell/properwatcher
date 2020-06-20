@@ -177,9 +177,7 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let dynamodb_region = config
     .get("dynamodb.region")
     .unwrap_or(String::from("eu-central-1"));
-  let dynamodb_filter_existing = config
-    .get("dynamodb.filter_existing")
-    .unwrap_or(false);
+  let dynamodb_filter_existing = config.get("dynamodb.filter_existing").unwrap_or(false);
 
   let mut crawler_configs: Vec<CrawlerConfig> = vec![];
   let watcher_arr = config.get_array("watcher").unwrap();

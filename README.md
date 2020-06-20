@@ -1,12 +1,15 @@
 # proper\[ty\]watcher
 
-The proper\[ty\]watcher is a lightweight Rust application that can monitor different property website queries. Once new properties are found on any of the sources, these changes can be forwarded to different sinks. So far a firebase database and/or a telegram chat can be configured.
+![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
+
+The proper\[ty\]watcher is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can enrich the property items (eg. geocoordinates) or observer changes (eg. send telegram notifications or populate a dabatase). The tool can be run either from command line, a provided docker image or an AWS lambda function.
 
 ## Features
 
 Since the tool is written in Rust it comes with a very low memory and cpu footprint. When only a few sources are being watched, memory will reside within 10-20 mb. Thus, you can have many instances running at the same time, watching different property queries and publishing results to different output channels.
 
 - **lightweight**: low on memory and cpu
+- **lambda support**: easy to use as an AWS lambda function
 - **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
 - **be the first to know**: define notifications and know about new properties immediately once they are available.
 
@@ -18,11 +21,17 @@ Since the tool is written in Rust it comes with a very low memory and cpu footpr
 - WG Gesucht
 - ImmoWelt
 
+### Supported Enrichers
+
+- **Geocordinates**: Nominatim open geocoder
+
 ### Supported Observers
 
 - **Firebase**: Cloud Firestore
 - **Telegram**: Sends messages to any Telegram chat
 - **Mail**: Sends mails via SMTP
+- **CSV**: Append directly to CSV file for offline analytics
+- **DynamoDb**: Insert found properties to a dynamodb table
 
 ## Usage
 
@@ -37,3 +46,30 @@ Once you have created a valid configuration file, you can run properwatcher via 
 ```bash
 docker run -it -v /home/flo/config.toml:/opt/properwatcher.toml --name properwatcher floschnell/properwatcher /opt/properwatcher.toml
 ```
+
+### via AWS Lambda
+
+Create AWS Lambda function from the provided zip package (see Releases page). Configuration is done via JSON input. The provided toml configuration file can be used as blueprint. An example of a JSON configuration for the AWS Lambda would be:
+```json
+{
+  "thread_count": 1,
+  "crawler_configs": [
+    {
+      "address": "https://www.immobilienscout24.de/Suche/de/bayern/muenchen-kreis/wohnung-mieten?enteredFrom=one_step_search",
+      "city": "Munich",
+      "crawler": "immoscout",
+      "property_type": "Flat",
+      "contract_type": "Rent"
+    }
+  ],
+  "dynamodb": {
+    "enabled": true,
+    "table_name": "properties",
+    "region": "eu-central-1"
+  }
+}
+```
+
+#### DynamoDb credentials
+
+Using the DynamoDb observer from the Lambda function is very easy. Simply grant access to the database from the lambda's role in AWS IAM.
