@@ -14,6 +14,10 @@ impl Observer for Mail {
     String::from("mail")
   }
 
+  fn init(&mut self, _: &ApplicationConfig) -> Result<(), String> {
+    Ok(())
+  }
+
   fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     if property.data.is_some() {
       let message = build_message(property);

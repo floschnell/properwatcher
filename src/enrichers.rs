@@ -10,5 +10,13 @@ pub fn get_enrichers(app_config: &ApplicationConfig) -> Vec<Box<dyn Enricher>> {
   enrichers
     .into_iter()
     .filter(|enricher| app_config.enrichers.contains(&enricher.name()))
+    .map(|mut enricher| {
+      match enricher.init(app_config) {
+        Ok(_) => Some(enricher),
+        Err(_) => None,
+      }
+    })
+    .filter(|opt_enricher| opt_enricher.is_some())
+    .map(|opt_enricher| opt_enricher.unwrap())
     .collect()
 }

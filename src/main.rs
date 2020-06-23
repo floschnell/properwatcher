@@ -152,8 +152,8 @@ fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> 
           let result = observer.observation(&app_config, property);
           match result {
             Err(e) => eprintln!(
-              "Error '{}' occurred, while triggering observer with property: {:?}",
-              &e.message, &property
+              "Error '{}' occurred, while triggering observer {} with property: {:?}",
+              &e.message, &observer.name(), &property
             ),
             Ok(_) => (),
           }

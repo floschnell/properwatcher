@@ -29,6 +29,10 @@ impl Observer for CSV {
     String::from("csv")
   }
 
+  fn init(&mut self, _: &ApplicationConfig) -> Result<(), String> {
+    Ok(())
+  }
+
   fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     if property.data.is_some() {
       let file = std::fs::OpenOptions::new()

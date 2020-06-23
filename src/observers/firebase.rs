@@ -5,18 +5,13 @@ use crate::ApplicationConfig;
 use firestore_db_and_auth::{documents, Credentials, ServiceSession};
 
 pub struct Firebase {
-  session: ServiceSession,
+  session: Option<ServiceSession>,
 }
 
 impl Firebase {
-  pub fn new(app_config: &ApplicationConfig) -> Self {
-    print!("connecting to firebase ... ");
-    let cred = Credentials::from_file(app_config.firebase.auth_json_path.as_str())
-      .expect("Read firebase credentials file");
-    println!("success.");
-    let session = ServiceSession::new(cred).expect("Create firebase service account session");
+  pub fn new(_: &ApplicationConfig) -> Self {
     Firebase {
-      session,
+      session: None,
     }
   }
 }
@@ -26,11 +21,20 @@ impl Observer for Firebase {
     String::from("firebase")
   }
 
+  fn init(&mut self, app_config: &ApplicationConfig) -> Result<(), String> {
+    print!("connecting to firebase ... ");
+    let cred = Credentials::from_file(app_config.firebase.auth_json_path.as_str())
+      .expect("Read firebase credentials file");
+    println!("success.");
+    self.session = Some(ServiceSession::new(cred).expect("Create firebase service account session")); 
+    Ok(())
+  }
+
   fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     let id = property.data.as_ref().map(|x| x.externalid.to_owned());
     let document_id = id.map(|x| format!("{}-{}", property.source, x));
     let result = documents::write(
-      &self.session,
+      self.session.as_ref().unwrap(),
       app_config.firebase.collection_name.as_str(),
       document_id,
       &property,

@@ -26,5 +26,13 @@ pub fn get_observers(app_config: &ApplicationConfig) -> Vec<Box<dyn Observer>> {
   observers
     .into_iter()
     .filter(|observer| app_config.observers.contains(&observer.name()))
+    .map(|mut observer| {
+      match observer.init(app_config) {
+        Ok(_) => Some(observer),
+        Err(_) => None,
+      }
+    })
+    .filter(|opt_observer| opt_observer.is_some())
+    .map(|opt_observer| opt_observer.unwrap())
     .collect()
 }

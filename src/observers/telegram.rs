@@ -13,6 +13,10 @@ impl Observer for Telegram {
     String::from("telegram")
   }
 
+  fn init(&mut self, _: &ApplicationConfig) -> Result<(), String> {
+    Ok(())
+  }
+
   fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
     match property.data {
       Some(ref property_data) => {

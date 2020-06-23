@@ -76,6 +76,10 @@ impl Enricher for Nominatim {
     String::from("nominatim")
   }
 
+  fn init(&mut self, _: &ApplicationConfig) -> Result<(), String> {
+    Ok(())
+  }
+
   fn enrich(&self, app_config: &ApplicationConfig, property: &Property) -> Property {
     let geocode_result_opt = match &property.data {
       Some(data) => match geocode(app_config, &data.address) {

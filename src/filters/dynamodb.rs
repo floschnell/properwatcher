@@ -6,19 +6,13 @@ use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, QueryInput};
 use std::collections::HashMap;
 
 pub struct DynamoDbFilter {
-  pub client: DynamoDbClient,
+  pub client: Option<DynamoDbClient>,
 }
 
 impl DynamoDbFilter {
-  pub fn new(app_config: &ApplicationConfig) -> Self {
+  pub fn new(_: &ApplicationConfig) -> Self {
     DynamoDbFilter {
-      client: DynamoDbClient::new(
-        app_config
-          .dynamodb
-          .region
-          .parse()
-          .unwrap_or(Region::EuCentral1),
-      ),
+      client: None,
     }
   }
 }
@@ -26,6 +20,17 @@ impl DynamoDbFilter {
 impl Filter for DynamoDbFilter {
   fn name(&self) -> String {
     String::from("dynamodb")
+  }
+
+  fn init(&mut self, app_config: &ApplicationConfig) -> Result<(), String> {
+    self.client = Some(DynamoDbClient::new(
+      app_config
+        .dynamodb
+        .region
+        .parse()
+        .unwrap_or(Region::EuCentral1),
+    ));
+    Ok(())
   }
 
   fn filter(&self, app_config: &ApplicationConfig, property: &Property) -> bool {
@@ -50,7 +55,7 @@ impl Filter for DynamoDbFilter {
         ..Default::default()
       };
 
-      let result = self.client.query(query).sync();
+      let result = self.client.as_ref().unwrap().query(query).sync();
       match result {
         Ok(r) => r.count.unwrap_or(0) <= 0,
         Err(e) => {
