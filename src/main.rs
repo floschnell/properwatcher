@@ -64,7 +64,7 @@ fn main() {
 
 fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> {
   let observers = get_observers(&app_config);
-  let enrichers = get_enrichers();
+  let enrichers = get_enrichers(&app_config);
   let filters = get_filters(&app_config);
 
   if app_config.test {
@@ -127,7 +127,7 @@ fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> 
     }
     println!("{} -> {} ... done. ", before, properties.len());
 
-    // enricht all new properties
+    // enrich all new properties
     print!("enriching ... ");
     let _ = std::io::stdout().flush();
     for enricher in enrichers {
@@ -147,7 +147,7 @@ fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> 
     } else {
       print!("calling observers ... ");
       let _ = std::io::stdout().flush();
-      for ref property in &properties {
+      for property in &properties {
         for observer in &observers {
           let result = observer.observation(&app_config, property);
           match result {

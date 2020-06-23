@@ -16,11 +16,15 @@ pub use crate::observers::dynamodb::DynamoDbObserver;
 use crate::ApplicationConfig;
 
 pub fn get_observers(app_config: &ApplicationConfig) -> Vec<Box<dyn Observer>> {
-  vec![
+  let observers: Vec<Box<dyn Observer>> = vec![
     Box::new(Telegram {}),
     Box::new(Firebase::new(app_config)),
     Box::new(Mail {}),
     Box::new(CSV {}),
     Box::new(DynamoDbObserver::new(app_config)),
-  ]
+  ];
+  observers
+    .into_iter()
+    .filter(|observer| app_config.observers.contains(&observer.name()))
+    .collect()
 }

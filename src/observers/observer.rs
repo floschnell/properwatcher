@@ -14,5 +14,6 @@ impl From<std::io::Error> for Error {
 }
 
 pub trait Observer {
+  fn name(&self) -> String;
   fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error>;
 }

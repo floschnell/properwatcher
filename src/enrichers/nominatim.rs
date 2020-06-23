@@ -69,42 +69,42 @@ impl From<ParseFloatError> for Error {
   }
 }
 
-pub struct Geocoder {}
+pub struct Nominatim {}
 
-impl Enricher for Geocoder {
+impl Enricher for Nominatim {
+  fn name(&self) -> String {
+    String::from("nominatim")
+  }
+
   fn enrich(&self, app_config: &ApplicationConfig, property: &Property) -> Property {
-    if app_config.geocoding.enabled {
-      let geocode_result_opt = match &property.data {
-        Some(data) => match geocode(app_config, &data.address) {
-          Ok(coords) => Some(coords),
-          Err(e) => {
-            println!("error during geocoding: {:?}", e);
-            None
-          }
-        },
-        None => None,
-      };
-      match geocode_result_opt {
-        Some(geocode_result) => {
-          let mut property_enriched = property.clone();
-          property_enriched.enrichments.insert(
-            String::from("latitude"),
-            geocode_result.coord.latitude.to_string(),
-          );
-          property_enriched.enrichments.insert(
-            String::from("longitude"),
-            geocode_result.coord.longitude.to_string(),
-          );
-          property_enriched.enrichments.insert(
-            String::from("uncertainty"),
-            geocode_result.uncertainty.to_string(),
-          );
-          property_enriched
+    let geocode_result_opt = match &property.data {
+      Some(data) => match geocode(app_config, &data.address) {
+        Ok(coords) => Some(coords),
+        Err(e) => {
+          println!("error during geocoding: {:?}", e);
+          None
         }
-        None => property.clone(),
+      },
+      None => None,
+    };
+    match geocode_result_opt {
+      Some(geocode_result) => {
+        let mut property_enriched = property.clone();
+        property_enriched.enrichments.insert(
+          String::from("latitude"),
+          geocode_result.coord.latitude.to_string(),
+        );
+        property_enriched.enrichments.insert(
+          String::from("longitude"),
+          geocode_result.coord.longitude.to_string(),
+        );
+        property_enriched.enrichments.insert(
+          String::from("uncertainty"),
+          geocode_result.uncertainty.to_string(),
+        );
+        property_enriched
       }
-    } else {
-      property.clone()
+      None => property.clone(),
     }
   }
 }
@@ -112,7 +112,7 @@ impl Enricher for Geocoder {
 pub fn geocode(app_config: &ApplicationConfig, address: &String) -> Result<GeocodeResult, Error> {
   let client = reqwest::blocking::Client::new();
 
-  let mut url = url::Url::parse(app_config.geocoding.nominatim_url.as_str())?;
+  let mut url = url::Url::parse(app_config.nominatim.nominatim_url.as_str())?;
   url
     .query_pairs_mut()
     .append_pair("q", address.replace("(Kreis)", "").as_str());
@@ -122,7 +122,7 @@ pub fn geocode(app_config: &ApplicationConfig, address: &String) -> Result<Geoco
     .get(url)
     .header(
       USER_AGENT,
-      HeaderValue::from_str(app_config.geocoding.user_agent.as_str()).unwrap(),
+      HeaderValue::from_str(app_config.nominatim.user_agent.as_str()).unwrap(),
     )
     .send()?;
   let one_second = std::time::Duration::from_secs(1);

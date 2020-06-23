@@ -20,6 +20,22 @@ run_periodically = true
 # run every 5 minutes (300 seconds)
 interval = 300
 
+# supported filters:
+# - dynamodb: filters out properties already in database
+filters = [ ]
+
+# supported enrichers:
+# - nominatim: adds geocoordinates
+enrichers = [ ]
+
+# supported observers:
+# - firebase: saves properties to a firebase collection
+# - csv: appends found properties to a CSV file
+# - mail: sends found properties via mail
+# - telegram: sends found properties to a telegram chat
+# - dynamodb: saves properties to a dynamodb table
+observers = [ ]
+
 #-------------
 # watchers
 #-------------
@@ -41,14 +57,13 @@ contract_type = "rent"
 property_type = "flat"
 
 #-------------
-# enrichers
+# modules
 #-------------
 
 # found properties can be geocoded (address will be translated into lat/long coordinates).
 # this will decrease notification speed, because properwatcher will pause for 1 second
 # after each request (see usage policy of nominatim)
-[geocoding]
-enabled = false
+[nominatim]
 # nominatim API will be used for geocoding
 # either use the global one, or you can also use a local instance
 nominatim_url = "https://nominatim.openstreetmap.org/search"
@@ -58,16 +73,8 @@ nominatim_url = "https://nominatim.openstreetmap.org/search"
 # feel free to append a custom string i.e. properwatcher-flo
 user_agent = "properwatcher"
 
-#-------------
-# observers
-#-------------
-
-# optionally the found properties can be stored in a firebase database.
-# the database will also be used to deduplicate found entries.
-# if the database is not enabled, properwatcher will only 
-[database]
-# the database and all related features can be toggled.
-enabled = false
+# found properties can be stored in a firebase database.
+[firebase]
 # if enabled, the file from auth_json_path will be read and used for authentication.
 auth_json_path = "firebase.json"
 # collection name
@@ -78,7 +85,6 @@ collection_name = "properties"
 # you can follow this tutorial's first two steps to create a bot token and chat id:
 # https://www.shellhacks.com/telegram-api-send-message-personal-notification-bot/
 [telegram]
-enabled = false
 # API key of your Telegram bot
 api_key = "<telegram-bot-api-key>"
 # chat id of the conversation with your private bot
@@ -87,7 +93,6 @@ chat_id = "<chat-id>"
 
 # found properties can be forwarded to you via email
 [mail]
-enabled = false
 smtp_server = "smtp.gmail.com"
 # your username - in case of gmail, your mail address
 # this is also where the notification mails are being sent to
@@ -100,7 +105,6 @@ password = "pass"
 # this option is recommended for easy dataset inspection via:
 # tableau or microsoft's power bi
 [csv]
-enabled = false
 # output file
 # new entries will be appended, if the file already exists
 filename = "properwatcher.csv"
@@ -111,10 +115,7 @@ filename = "properwatcher.csv"
 # - AWS_ACCESS_KEY_ID
 # - AWS_SECRET_ACCESS_KEY
 [dynamodb]
-enabled = false
 # name of the table in your dynamodb
 table_name = "properties"
 # the region your dynamodb is located in
 region = "eu-central-1"
-# only enrich and notify properties that are not yet in the database
-filter_existing = false

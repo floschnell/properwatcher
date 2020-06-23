@@ -10,8 +10,12 @@ use num_format::{Locale, ToFormattedString};
 pub struct Mail {}
 
 impl Observer for Mail {
+  fn name(&self) -> String {
+    String::from("mail")
+  }
+
   fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
-    if app_config.mail.enabled && property.data.is_some() {
+    if property.data.is_some() {
       let message = build_message(property);
 
       let email = EmailBuilder::new()
