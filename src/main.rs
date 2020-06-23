@@ -62,10 +62,20 @@ fn main() {
   }
 }
 
-fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> {
+fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   let observers = get_observers(&app_config);
   let enrichers = get_enrichers(&app_config);
   let filters = get_filters(&app_config);
+  let run_started = Instant::now();
+
+  let observer_names: Vec<String> = observers.iter().map(|o| o.name()).collect();
+  let filter_names: Vec<String> = filters.iter().map(|f| f.name()).collect();
+  let enricher_names: Vec<String> = enrichers.iter().map(|e| e.name()).collect();
+  println!();
+  println!("starting run.");
+  println!("active filters: {:?}", filter_names);
+  println!("active enrichers: {:?}", enricher_names);
+  println!("active observers: {:?}", observer_names);
 
   if app_config.test {
     println!("----- Running in TEST mode! -----");
@@ -73,7 +83,6 @@ fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> 
 
   let thread_count = app_config.thread_count as usize;
   let barrier = Arc::new(Barrier::new(thread_count + 1));
-  println!();
 
   let crawl_start = Instant::now();
   let guarded_configs = Arc::new(Mutex::new(app_config.watchers.to_owned()));
@@ -102,65 +111,58 @@ fn run(app_config: &ApplicationConfig, notify_observers: bool) -> Vec<Property> 
     .flatten()
     .collect::<Vec<_>>();
 
-  let run_duration = crawl_start.elapsed();
+  let crawl_duration = crawl_start.elapsed();
   println!(
     "analyzed {} pages and found {} properties in {}.{} seconds.",
     app_config.watchers.len(),
     properties.len(),
-    run_duration.as_secs(),
-    run_duration.subsec_millis()
+    crawl_duration.as_secs(),
+    crawl_duration.subsec_millis()
   );
 
-  if !notify_observers {
-    println!("will not notify observers.");
+  if !postprocess {
+    println!("will not process properties.");
     properties
   } else {
-    // process filters
-    let before = properties.len();
-    print!("filtering ... ");
-    let _ = std::io::stdout().flush();
-    for filter in filters {
-      properties = properties
-        .into_iter()
-        .filter(|property| filter.filter(&app_config, property))
-        .collect();
-    }
-    println!("{} -> {} ... done. ", before, properties.len());
 
-    // enrich all new properties
-    print!("enriching ... ");
+    print!("processing properties ");
     let _ = std::io::stdout().flush();
-    for enricher in enrichers {
-      properties = properties
-        .into_iter()
-        .map(|property| enricher.enrich(&app_config, &property))
-        .collect();
-    }
-    println!("done.");
+    let processing_start = Instant::now();
+    properties = properties
+      .into_iter()
+      .inspect(|_| {
+        print!(".");
+        let _ = std::io::stdout().flush();
+      })
+      .filter(|property|
+        filters
+          .iter()
+          .all(|f| f.filter(app_config, property)))
+      .map(|property|
+        enrichers
+          .iter()
+          .fold(property, |property, enricher|
+            enricher.enrich(app_config, &property)))
+      .inspect(|property|
+        if app_config.test {
+          println!("{:?}", property);
+        } else {
+          observers
+          .iter()
+          .for_each(|observer| {
+            match observer.observation(app_config, property) {
+              Ok(_) => (),
+              Err(e) => eprintln!("Error during observer {}: {}", &observer.name(), e.message),
+            }
+          })
+        })
+      .collect();
+    let processing_duration = processing_start.elapsed();
+    println!(" completed in {}.{} seconds.", processing_duration.as_secs(), processing_duration.subsec_millis());
 
-    // notify observers
-    if app_config.test {
-      println!("this is a test run, will not notify observers.");
-      for ref property in &properties {
-        println!("found property: {:?}", property);
-      }
-    } else {
-      print!("calling observers ... ");
-      let _ = std::io::stdout().flush();
-      for property in &properties {
-        for observer in &observers {
-          let result = observer.observation(&app_config, property);
-          match result {
-            Err(e) => eprintln!(
-              "Error '{}' occurred, while triggering observer {} with property: {:?}",
-              &e.message, &observer.name(), &property
-            ),
-            Ok(_) => (),
-          }
-        }
-      }
-      println!("done.");
-    }
+    let run_duration = run_started.elapsed();
+    println!("run took {}.{} seconds.", run_duration.as_secs(), run_duration.subsec_millis());
+
     properties
   }
 }
