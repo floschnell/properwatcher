@@ -2,36 +2,53 @@
 
 ![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
 
-The proper\[ty\]watcher is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can enrich the property items (eg. geocoordinates) or observer changes (eg. send telegram notifications or populate a dabatase). The tool can be run either from command line, a provided docker image or an AWS lambda function.
+The _properwatcher_ is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can filter (eg. drop already processed items), enrich (eg. add geocoordinates) and observer changes (eg. send telegram notifications or populate a dabatase). The tool can be run either from command line, docker image or an AWS lambda function.
 
 ## Features
 
-Since the tool is written in Rust it comes with a very low memory and cpu footprint. When only a few sources are being watched, memory will reside within 10-20 mb. Thus, you can have many instances running at the same time, watching different property queries and publishing results to different output channels.
-
 - **lightweight**: low on memory and cpu
-- **lambda support**: easy to use as an AWS lambda function
+- **modular**: modules (watchers, filters, enrichers and observers) can be (de-)activated and extended easily
+- **lambda support**: easy to use as an AWS lambda function and can be reliably scheduled via EventBridge.
 - **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
 - **be the first to know**: define notifications and know about new properties immediately once they are available.
 
-### Supported Websites
+## Modules
 
-- ImmobilienScout24
-- Wohnungsboerse
-- Immobilienmarkt Süddeutsche Zeitung
-- WG Gesucht
-- ImmoWelt
+### Watchers
 
-### Supported Enrichers
+> Watchers can scrape property portal URLs and extract offers into a normalized form. Those extracted entries will then get postprocessed.
 
-- **Geocordinates**: Nominatim open geocoder
+- **immoscout**: ImmobilienScout24
+- **wohnungsboerse**: Wohnungsboerse
+- **sueddeutsche**: Immobilienmarkt Süddeutsche Zeitung
+- **wggesucht**: WG Gesucht
+- **immowelt**: ImmoWelt
 
-### Supported Observers
+### Filters
 
-- **Firebase**: Cloud Firestore
-- **Telegram**: Sends messages to any Telegram chat
-- **Mail**: Sends mails via SMTP
-- **CSV**: Append directly to CSV file for offline analytics
-- **DynamoDb**: Insert found properties to a dynamodb table
+> Filters look at each extracted entry and may remove it, before it gets enriched or observed. This could be, because it has already been processed in the past or it is not interesting in any way.
+
+- **dynamodb**: checks if the item has already been processed and resides in the configured DynamoDb.
+
+### Enrichers
+
+> Enrichers may match additional information to the extracted entries. This could be geocoordinates, detail URLs etc.
+
+- **nominatim**: geocoordinates powered by OpenStreetMap
+
+### Observers
+
+> Observers get notified once new entries have been found.
+
+- **firebase**: Cloud Firestore
+- **telegram**: Sends messages to any Telegram chat
+- **mail**: Sends mails via SMTP
+- **csv**: Append directly to CSV file for offline analytics
+- **dynamodb**: Insert found entries into the configured DynamoDb table.
+
+## Pipeline
+
+![Properwatcher Pipeline](pipeline.svg)
 
 ## Usage
 
@@ -39,21 +56,28 @@ Since the tool is written in Rust it comes with a very low memory and cpu footpr
 
 Settings and property queries that should be watched have to be defined in a configuration file. propertywatcher by default looks for a file called `config.toml` that resides in the same directory as the tool is run from. A sample configuration file can be found in this repository and is named [config.sample.toml](/config.sample.toml). You can create a copy and adjust it to your needs. Pay special attention to the [`watcher` section](config.sample.toml#L21). This section can be given multiple times and will tell properwatcher, where to look for new flats/houses.
 
+### via CLI
+
+`./properwatcher [<path-to-config-file>]`
+
+If the config file path parameter is left out, the binary will look for a file called `config.toml` in the current working directory.
+
 ### via Docker
 
 Once you have created a valid configuration file, you can run properwatcher via the provided docker image. The properwatcher command takes an optional location for a configuration file as first parameter. We'll use this fact in the following command to refer to our mounted config file that locally resides in `/home/flo/config.toml`.
 
 ```bash
-docker run -it -v /home/flo/config.toml:/opt/properwatcher.toml --name properwatcher floschnell/properwatcher /opt/properwatcher.toml
+docker run -d --restart on-failure -v /home/flo/config.toml:/opt/properwatcher.toml --name properwatcher floschnell/properwatcher /opt/properwatcher.toml
 ```
 
 ### via AWS Lambda
 
 Create AWS Lambda function from the provided zip package (see Releases page). Configuration is done via JSON input. The provided toml configuration file can be used as blueprint. An example of a JSON configuration for the AWS Lambda would be:
+
 ```json
 {
   "thread_count": 1,
-  "crawler_configs": [
+  "watchers": [
     {
       "address": "https://www.immobilienscout24.de/Suche/de/bayern/muenchen-kreis/wohnung-mieten?enteredFrom=one_step_search",
       "city": "Munich",
@@ -62,13 +86,17 @@ Create AWS Lambda function from the provided zip package (see Releases page). Co
       "contract_type": "Rent"
     }
   ],
+  "filters": ["dynamodb"],
+  "enrichers": ["nominatim"],
+  "observers": ["dynamodb"],
   "dynamodb": {
-    "enabled": true,
     "table_name": "properties",
     "region": "eu-central-1"
   }
 }
 ```
+
+In the above case all found items would be stored in the configured DynamoDb table. The _dynamodb_ filter would remove items, that already exist in the database. So the _nominatim_ enricher would only process the items, that have not yet been seen by the properwatcher.
 
 #### DynamoDb credentials
 

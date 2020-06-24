@@ -1,0 +1,12 @@
+// {type:activity}
+// {direction:topDown}
+// {generate:true}
+(note: properwatcher pipeline {bg: lightyellow})
+(start)->(execute watchers)when all watchers have completed-><check>
+(execute watchers)-(note: parallel scraping of all configured property portal search URLs.\nfound properties are normalized and get collected for postprocessing. {bg:lightyellow})
+<check>[items left]->(take item)->(apply all filters)-><filters>
+(apply all filters)-(note: each filter may remove the found item from the postprocessing pipeline. {bg:lightyellow})
+<filters>[removed]-><check>
+<filters>[pass]->(apply all enrichers)->(notify all observers)-><check>
+(apply all enrichers)-(note: enrichers add metadata to found properties.\nThis could for instance be geocoordinates. {bg:lightyellow})
+<check>[empty]->(end)
