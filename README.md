@@ -14,7 +14,7 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 
 ## Modules
 
-### Watchers
+### Watchers (crawlers)
 
 > Watchers can scrape property portal URLs and extract offers into a normalized form. Those extracted entries will then get postprocessed.
 
@@ -101,3 +101,29 @@ In the above case all found items would be stored in the configured DynamoDb tab
 #### DynamoDb credentials
 
 Using the DynamoDb observer from the Lambda function is very easy. Simply grant access to the database from the lambda's role in AWS IAM.
+
+## Development
+
+### Compile for your system
+
+If not yet done, setup your rust environment via `rustup` [as described here](https://www.rust-lang.org/tools/install).
+
+After that you can clone this repository and within the root folder, run `cargo run` to quickly compile and run the current source code.
+
+To build a release optimized version of the code, run `cargo build --release`.
+
+### Build for AWS lambda
+
+From the root of the project, run:
+
+```bash
+docker run --rm \
+    -v ${PWD}:/code \
+    -v ${HOME}/.cargo/registry:/root/.cargo/registry \
+    -v ${HOME}/.cargo/git:/root/.cargo/git \
+    softprops/lambda-rust
+```
+
+The resulting zip archive should reside in `target/lambda/release` and can be used with AWS lambda right away.
+
+The used lambda library for Rust [gives more information on how it can be used from docker](https://github.com/awslabs/aws-lambda-rust-runtime#docker).
