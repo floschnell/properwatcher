@@ -28,7 +28,8 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 
 > Filters look at each extracted entry and may remove it, before it gets enriched or observed. This could be, because it has already been processed in the past or it is not interesting in any way.
 
-- **dynamodb**: checks if the item has already been processed and resides in the configured DynamoDb.
+- **dynamodb**: checks if the item already exists in the configured DynamoDb.
+- **csv**: checks if the item has already been written to the configured csv.
 
 ### Enrichers
 
