@@ -45,6 +45,7 @@ impl Crawler for WGGesucht {
         address,
         title,
         rooms: Self::parse_number(rooms)?,
+        url: format!("https://www.wg-gesucht.de/{}", &externalid),
         externalid,
         property_type: PropertyType::Flat,
         contract_type: ContractType::Rent,

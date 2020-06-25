@@ -63,6 +63,7 @@ impl Crawler for Wohnungsboerse {
         address,
         title,
         rooms: Self::parse_number(rooms)?,
+        url: format!("https://www.wohnungsboerse.net/immodetail/{}", &externalid),
         externalid: externalid.to_string(),
         property_type: PropertyType::Flat,
         contract_type: ContractType::Rent,

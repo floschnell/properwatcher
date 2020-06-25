@@ -60,6 +60,10 @@ impl Crawler for Sueddeutsche {
         address: self.brackets.replace_all(address.deref(), "").into_owned(),
         title,
         rooms: Self::parse_number(rooms.deref().to_owned())?,
+        url: format!(
+          "https://immobilienmarkt.sueddeutsche.de/Wohnungen/mieten/Muenchen/Wohnung/{}?comeFromTL=1",
+          &externalid
+        ),
         externalid,
         property_type: PropertyType::Flat,
         contract_type: ContractType::Rent,

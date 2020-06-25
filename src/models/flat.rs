@@ -69,6 +69,7 @@ pub struct PropertyData {
   pub rooms: f32,
   #[serde(skip_serializing)]
   pub tags: Vec<String>,
+  pub url: String,
 }
 
 impl PartialEq for Property {
@@ -163,6 +164,7 @@ mod tests {
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -182,6 +184,7 @@ mod tests {
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -206,6 +209,7 @@ mod tests {
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -225,6 +229,7 @@ mod tests {
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -249,6 +254,7 @@ mod tests {
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -268,6 +274,7 @@ mod tests {
         contract_type: ContractType::Rent,
         property_type: PropertyType::Flat,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -313,6 +320,7 @@ mod tests {
         contract_type: ContractType::Buy,
         property_type: PropertyType::House,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };
@@ -332,6 +340,7 @@ mod tests {
         contract_type: ContractType::Buy,
         property_type: PropertyType::House,
         tags: vec![],
+        url: String::from(""),
       }),
       enrichments: HashMap::new(),
     };

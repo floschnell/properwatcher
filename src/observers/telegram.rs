@@ -1,6 +1,5 @@
 use crate::models::{ContractType, Property, PropertyType};
-use crate::observers::Error;
-use crate::observers::Observer;
+use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
 use std::collections::HashMap;
 
@@ -17,10 +16,14 @@ impl Observer for Telegram {
     Ok(())
   }
 
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
+  fn observation(
+    &self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<(), ObserverError> {
     match property.data {
       Some(ref property_data) => {
-        let url = get_url(&property.source, property_data.externalid.to_owned());
+        let url = &property_data.url;
         let property_type = match property_data.property_type {
           PropertyType::Flat => "flat",
           PropertyType::House => "house",
@@ -88,19 +91,5 @@ fn send_telegram_message(app_config: &ApplicationConfig, msg: String) -> () {
       }
     }
     Err(e) => println!("{}", e),
-  }
-}
-
-fn get_url(source: &String, external_id: String) -> String {
-  match &source[..] {
-    "immoscout" => format!("http://www.immobilienscout24.de/expose/{}", external_id),
-    "immowelt" => format!("https://www.immowelt.de/expose/{}", external_id),
-    "sueddeutsche" => format!(
-      "https://immobilienmarkt.sueddeutsche.de/Wohnungen/mieten/Muenchen/Wohnung/{}?comeFromTL=1",
-      external_id
-    ),
-    "wggesucht" => format!("https://www.wg-gesucht.de/{}", external_id),
-    "wohnungsboerse" => format!("https://www.wohnungsboerse.net/immodetail/{}", external_id),
-    _ => String::from(""),
   }
 }

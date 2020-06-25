@@ -1,6 +1,5 @@
 use crate::models::{ContractType, Property, PropertyData, PropertyType};
-use crate::observers::Error;
-use crate::observers::Observer;
+use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
 use lettre::{smtp::authentication::Credentials, SmtpClient, Transport};
 use lettre_email::EmailBuilder;
@@ -18,7 +17,11 @@ impl Observer for Mail {
     Ok(())
   }
 
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
+  fn observation(
+    &self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<(), ObserverError> {
     if property.data.is_some() {
       let message = build_message(property);
 
@@ -54,8 +57,7 @@ impl Observer for Mail {
 
 fn build_message(property: &Property) -> String {
   let property_data: &PropertyData = property.data.as_ref().unwrap();
-
-  let url = get_url(&property.source, property_data.externalid.to_owned());
+  let url = &property_data.url;
   let property_type = match property_data.property_type {
     PropertyType::Flat => "flat",
     PropertyType::House => "house",
@@ -92,18 +94,4 @@ fn build_message(property: &Property) -> String {
     url
   ));
   msg
-}
-
-fn get_url(source: &String, external_id: String) -> String {
-  match &source[..] {
-    "immoscout" => format!("http://www.immobilienscout24.de/expose/{}", external_id),
-    "immowelt" => format!("https://www.immowelt.de/expose/{}", external_id),
-    "sueddeutsche" => format!(
-      "https://immobilienmarkt.sueddeutsche.de/Wohnungen/mieten/Muenchen/Wohnung/{}?comeFromTL=1",
-      external_id
-    ),
-    "wggesucht" => format!("https://www.wg-gesucht.de/{}", external_id),
-    "wohnungsboerse" => format!("https://www.wohnungsboerse.net/immodetail/{}", external_id),
-    _ => String::from(""),
-  }
 }

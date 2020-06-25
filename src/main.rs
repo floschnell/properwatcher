@@ -65,7 +65,7 @@ fn main() {
 fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   let observers = get_observers(&app_config);
   let enrichers = get_enrichers(&app_config);
-  let filters = get_filters(&app_config);
+  let mut filters = get_filters(&app_config);
   let run_started = Instant::now();
 
   let observer_names: Vec<String> = observers.iter().map(|o| o.name()).collect();
@@ -124,44 +124,76 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
     println!("will not process properties.");
     properties
   } else {
-
     print!("processing properties ");
     let _ = std::io::stdout().flush();
     let processing_start = Instant::now();
     properties = properties
       .into_iter()
+      // running filters
+      .filter(|property| {
+        filters
+          .iter_mut()
+          .all(|f| match f.filter(app_config, property) {
+            Ok(result) => result,
+            Err(e) => {
+              eprintln!("Error while running filter {}: {}", &f.name(), e.message);
+              true
+            }
+          })
+      })
       .inspect(|_| {
         print!(".");
         let _ = std::io::stdout().flush();
       })
-      .filter(|property|
-        filters
-          .iter()
-          .all(|f| f.filter(app_config, property)))
-      .map(|property|
-        enrichers
-          .iter()
-          .fold(property, |property, enricher|
-            enricher.enrich(app_config, &property)))
-      .inspect(|property|
+      // running enrichers
+      .map(|property| {
+        enrichers.iter().fold(property, |property, enricher| {
+          match enricher.enrich(app_config, &property) {
+            Ok(enriched_property) => enriched_property,
+            Err(e) => {
+              eprintln!(
+                "Error while running enricher {}: {}",
+                &enricher.name(),
+                e.message
+              );
+              property
+            }
+          }
+        })
+      })
+      // running observers
+      .inspect(|property| {
         if app_config.test {
           println!("{:?}", property);
         } else {
-          observers
-          .iter()
-          .for_each(|observer| {
-            match observer.observation(app_config, property) {
+          observers.iter().for_each(
+            |observer| match observer.observation(app_config, property) {
               Ok(_) => (),
-              Err(e) => eprintln!("Error during observer {}: {}", &observer.name(), e.message),
-            }
-          })
-        })
+              Err(e) => eprintln!(
+                "Error while running observer {}: {}",
+                &observer.name(),
+                e.message
+              ),
+            },
+          )
+        }
+      })
       .collect();
+
     let processing_duration = processing_start.elapsed();
-    println!(" completed in {}.{} seconds.", processing_duration.as_secs(), processing_duration.subsec_millis());
+    println!(
+      "completed in {}.{} seconds.",
+      processing_duration.as_secs(),
+      processing_duration.subsec_millis()
+    );
 
     let run_duration = run_started.elapsed();
-    println!("run took {}.{} seconds.", run_duration.as_secs(), run_duration.subsec_millis());
+    println!(
+      "run took {}.{} seconds and successfully processed {} items.",
+      run_duration.as_secs(),
+      run_duration.subsec_millis(),
+      properties.len()
+    );
 
     properties
   }

@@ -1,4 +1,4 @@
-use crate::enrichers::Enricher;
+use crate::enrichers::{Enricher, EnricherError};
 use crate::models::Property;
 use crate::ApplicationConfig;
 use reqwest::header::HeaderValue;
@@ -80,35 +80,37 @@ impl Enricher for Nominatim {
     Ok(())
   }
 
-  fn enrich(&self, app_config: &ApplicationConfig, property: &Property) -> Property {
-    let geocode_result_opt = match &property.data {
+  fn enrich(
+    &self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<Property, EnricherError> {
+    match &property.data {
       Some(data) => match geocode(app_config, &data.address) {
-        Ok(coords) => Some(coords),
+        Ok(geocode_result) => {
+          let mut property_enriched = property.clone();
+          property_enriched.enrichments.insert(
+            String::from("latitude"),
+            geocode_result.coord.latitude.to_string(),
+          );
+          property_enriched.enrichments.insert(
+            String::from("longitude"),
+            geocode_result.coord.longitude.to_string(),
+          );
+          property_enriched.enrichments.insert(
+            String::from("uncertainty"),
+            geocode_result.uncertainty.to_string(),
+          );
+          Ok(property_enriched)
+        }
         Err(e) => {
           println!("error during geocoding: {:?}", e);
-          None
+          Err(EnricherError { message: e.message })
         }
       },
-      None => None,
-    };
-    match geocode_result_opt {
-      Some(geocode_result) => {
-        let mut property_enriched = property.clone();
-        property_enriched.enrichments.insert(
-          String::from("latitude"),
-          geocode_result.coord.latitude.to_string(),
-        );
-        property_enriched.enrichments.insert(
-          String::from("longitude"),
-          geocode_result.coord.longitude.to_string(),
-        );
-        property_enriched.enrichments.insert(
-          String::from("uncertainty"),
-          geocode_result.uncertainty.to_string(),
-        );
-        property_enriched
-      }
-      None => property.clone(),
+      None => Err(EnricherError {
+        message: String::from("No data."),
+      }),
     }
   }
 }

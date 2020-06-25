@@ -48,6 +48,7 @@ impl Crawler for ImmoScout {
       title,
       plot_squaremeters,
       rooms: Self::parse_number(rooms)?,
+      url: format!("http://www.immobilienscout24.de/expose/{}", &externalid),
       externalid,
       property_type: PropertyType::Flat,
       contract_type: ContractType::Rent,

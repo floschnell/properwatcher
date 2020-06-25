@@ -1,11 +1,10 @@
 use crate::models::{ContractType, Property, PropertyType};
-use crate::observers::Error;
-use crate::observers::Observer;
+use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
 use rusoto_core::Region;
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, PutItemInput};
+use serde_derive::{Deserialize, Serialize};
 use serde_dynamodb::to_hashmap;
-use serde_derive::{Serialize, Deserialize};
 
 pub struct DynamoDbObserver {
   pub client: DynamoDbClient,
@@ -14,7 +13,13 @@ pub struct DynamoDbObserver {
 impl DynamoDbObserver {
   pub fn new(app_config: &ApplicationConfig) -> Self {
     DynamoDbObserver {
-      client: DynamoDbClient::new(app_config.dynamodb.region.parse().unwrap_or(Region::EuCentral1)),
+      client: DynamoDbClient::new(
+        app_config
+          .dynamodb
+          .region
+          .parse()
+          .unwrap_or(Region::EuCentral1),
+      ),
     }
   }
 }
@@ -24,6 +29,7 @@ struct DynamoDbEntry {
   pub id: String,
   pub source: String,
   pub title: String,
+  pub url: String,
   pub can_be_rented: bool,
   pub can_be_bought: bool,
   pub is_flat: bool,
@@ -49,26 +55,31 @@ impl Observer for DynamoDbObserver {
     Ok(())
   }
 
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
+  fn observation(
+    &self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<(), ObserverError> {
     if property.data.is_some() {
-      let property_data = property.data.as_ref().unwrap().clone();
+      let property_data = property.data.as_ref().unwrap();
 
       let mut id = String::from(property.source.as_str());
       id.push('-');
       id.push_str(property.data.as_ref().unwrap().externalid.as_str());
 
       let entry = DynamoDbEntry {
-        id,
-        source: property.source.to_owned(),
-        title: property_data.title,
-        address: property_data.address,
+        id: id.clone(),
+        source: property.source.clone(),
+        title: property_data.title.clone(),
+        url: property_data.url.clone(),
+        address: property_data.address.clone(),
         can_be_rented: property_data.contract_type == ContractType::Rent,
         can_be_bought: property_data.contract_type == ContractType::Buy,
         is_flat: property_data.property_type == PropertyType::Flat,
         is_house: property_data.property_type == PropertyType::House,
         date: property.date,
         price: property_data.price,
-        city: property.city.to_owned(),
+        city: property.city.clone(),
         squaremeters: property_data.squaremeters,
         plot_squaremeters: property_data.plot_squaremeters,
         rooms: property_data.rooms,
@@ -92,7 +103,7 @@ impl Observer for DynamoDbObserver {
       };
 
       let put_item_input: PutItemInput = PutItemInput {
-        table_name: app_config.dynamodb.table_name.to_owned(),
+        table_name: app_config.dynamodb.table_name.clone(),
         item: to_hashmap(&entry).unwrap(),
         ..Default::default()
       };
@@ -100,11 +111,9 @@ impl Observer for DynamoDbObserver {
       let put_result = self.client.put_item(put_item_input).sync();
       match put_result {
         Ok(_) => Ok(()),
-        Err(error) => {
-        Err(Error {
-            message: format!("Error while inserting to DynamoDb: {:?}", error)
-          })
-        }
+        Err(error) => Err(ObserverError {
+          message: format!("Error while inserting {} to DynamoDb: {:?}", id, error),
+        }),
       }
     } else {
       Ok(())

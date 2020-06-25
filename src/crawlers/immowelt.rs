@@ -53,6 +53,7 @@ impl Crawler for ImmoWelt {
       address: cleaned_address,
       title,
       rooms: Self::parse_number(rooms)?,
+      url: format!("https://www.immowelt.de/expose/{}", &externalid),
       externalid,
       property_type: PropertyType::Flat,
       contract_type: ContractType::Rent,

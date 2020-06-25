@@ -1,4 +1,4 @@
-use crate::filters::Filter;
+use crate::filters::{Filter, FilterError};
 use crate::models::Property;
 use crate::ApplicationConfig;
 use rusoto_core::Region;
@@ -11,9 +11,7 @@ pub struct DynamoDbFilter {
 
 impl DynamoDbFilter {
   pub fn new(_: &ApplicationConfig) -> Self {
-    DynamoDbFilter {
-      client: None,
-    }
+    DynamoDbFilter { client: None }
   }
 }
 
@@ -33,7 +31,11 @@ impl Filter for DynamoDbFilter {
     Ok(())
   }
 
-  fn filter(&self, app_config: &ApplicationConfig, property: &Property) -> bool {
+  fn filter(
+    &mut self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<bool, FilterError> {
     if property.data.is_some() {
       let mut id = String::from(property.source.as_str());
       id.push('-');
@@ -57,14 +59,15 @@ impl Filter for DynamoDbFilter {
 
       let result = self.client.as_ref().unwrap().query(query).sync();
       match result {
-        Ok(r) => r.count.unwrap_or(0) <= 0,
-        Err(e) => {
-          eprintln!("Error while filtering with dynamodb: {}", e);
-          true
-        },
+        Ok(r) => Ok(r.count.unwrap_or(0) <= 0),
+        Err(e) => Err(FilterError {
+          message: e.to_string(),
+        }),
       }
     } else {
-      true
+      Err(FilterError {
+        message: String::from("No data!"),
+      })
     }
   }
 }

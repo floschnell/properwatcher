@@ -1,6 +1,5 @@
 use crate::models::Property;
-use crate::observers::Error;
-use crate::observers::Observer;
+use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
 use serde_derive::{Deserialize, Serialize};
 use std::io::prelude::*;
@@ -10,6 +9,7 @@ struct CSVProperty {
   pub source: String,
   pub source_id: String,
   pub title: String,
+  pub url: String,
   pub date: i64,
   pub city: String,
   pub price: f32,
@@ -33,26 +33,37 @@ impl Observer for CSV {
     Ok(())
   }
 
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
+  fn observation(
+    &self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<(), ObserverError> {
     if property.data.is_some() {
       let file = std::fs::OpenOptions::new()
+        .create(true)
         .read(true)
-        .write(true)
+        .append(true)
         .open(&app_config.csv.filename)
-        .or_else(|_| std::fs::File::create(&app_config.csv.filename))
-        .expect("Create file or open for reading.");
+        .expect(
+          format!(
+            "Could not open file {} for reading.",
+            &app_config.csv.filename
+          )
+          .as_str(),
+        );
 
       let property_data = property.data.as_ref().unwrap();
       let csv_property = CSVProperty {
-        source: property.source.to_owned(),
-        source_id: property_data.externalid.to_owned(),
-        title: property_data.title.to_owned(),
+        source: property.source.clone(),
+        source_id: property_data.externalid.clone(),
+        title: property_data.title.clone(),
+        url: property_data.url.clone(),
         date: property.date,
-        city: property.city.to_owned(),
+        city: property.city.clone(),
         price: property_data.price,
         squaremeters: property_data.squaremeters,
         plot_squaremeters: property_data.plot_squaremeters.unwrap_or(0.0),
-        address: property_data.address.to_owned(),
+        address: property_data.address.clone(),
         rooms: property_data.rooms,
         tags: property_data.tags.clone().join(","),
         latitude: property

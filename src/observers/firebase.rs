@@ -1,6 +1,5 @@
 use crate::models::Property;
-use crate::observers::Error;
-use crate::observers::Observer;
+use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
 use firestore_db_and_auth::{documents, Credentials, ServiceSession};
 
@@ -10,9 +9,7 @@ pub struct Firebase {
 
 impl Firebase {
   pub fn new(_: &ApplicationConfig) -> Self {
-    Firebase {
-      session: None,
-    }
+    Firebase { session: None }
   }
 }
 
@@ -26,11 +23,16 @@ impl Observer for Firebase {
     let cred = Credentials::from_file(app_config.firebase.auth_json_path.as_str())
       .expect("Read firebase credentials file");
     println!("success.");
-    self.session = Some(ServiceSession::new(cred).expect("Create firebase service account session")); 
+    self.session =
+      Some(ServiceSession::new(cred).expect("Create firebase service account session"));
     Ok(())
   }
 
-  fn observation(&self, app_config: &ApplicationConfig, property: &Property) -> Result<(), Error> {
+  fn observation(
+    &self,
+    app_config: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<(), ObserverError> {
     let id = property.data.as_ref().map(|x| x.externalid.to_owned());
     let document_id = id.map(|x| format!("{}-{}", property.source, x));
     let result = documents::write(
@@ -41,9 +43,10 @@ impl Observer for Firebase {
       documents::WriteOptions::default(),
     );
     match result.err() {
-      Some(error) => println!("ERROR: {:?}!", error),
-      None => (),
+      Some(error) => Err(ObserverError {
+        message: error.to_string(),
+      }),
+      None => Ok(()),
     }
-    Ok(())
   }
 }
