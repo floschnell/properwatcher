@@ -73,7 +73,7 @@ docker run -d --restart on-failure -v /home/flo/config.toml:/opt/properwatcher.t
 
 ### via AWS Lambda
 
-There's [a 4-step tutorial](tutorial/1_create_lambda.md) explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
+There's [a 4-step tutorial](tutorial/0_intro.md) explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
 
 Create AWS Lambda function from the provided zip package (see Releases page). Configuration is done via JSON input. The provided toml configuration file can be used as blueprint. An example of a JSON configuration for the AWS Lambda would be:
 
