@@ -2,7 +2,7 @@
 
 ## Creating the DynamoDb
 
-First of all, make sure that you have set the preferred region (right top, next to your username). Next, navigate to the DynamoDb service. If you haven't used it yet, it will offer to create a new database table.
+Within the AWS management console, navigate to the DynamoDb service. If you haven't used it yet, it will offer to create a new database table right away.
 
 When you create a new table, you need to set a name and a primary key. While the name can be chosen freely, the primary key needs to be called `id` and of type _character string_.
 

@@ -4,7 +4,7 @@
 
 To create a new AWS lambda function, download the latest lambda .zip from [the release page](https://github.com/floschnell/properwatcher/releases).
 
-Next, log into your AWS management console and navigate to the _Lambda_ service. Click _Create Function_ and choose _without template_. The name of the function can be chosen freely and the runtime should be set to _custom bootstrap_. All the other properties can be left untouched.
+Next, log into your AWS management console and navigate to the _Lambda_ service. Make sure that you have set the preferred region (right top, next to your username). Region will influence latency and the source IP address that properwatcher will use to make the requests to the property websites. Click _Create Function_ and choose _without template_. The name of the function can be chosen freely and the runtime should be set to _custom bootstrap_. All the other properties can be left untouched.
 
 Now, you should see the details page of your new lambda. Below the designer, you should see a box titled _function code_. Click on the box's actions and choose _upload ZIP-file_. Choose the downloaded properwatcher zip. And once uploaded, you're done.
 
