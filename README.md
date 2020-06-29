@@ -57,6 +57,12 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 
 Settings and property queries that should be watched have to be defined in a configuration file. propertywatcher by default looks for a file called `config.toml` that resides in the same directory as the tool is run from. A sample configuration file can be found in this repository and is named [config.sample.toml](/config.sample.toml). You can create a copy and adjust it to your needs. Pay special attention to the [`watcher` section](config.sample.toml#L21). This section can be given multiple times and will tell properwatcher, where to look for new flats/houses.
 
+### Tutorial
+
+There's a tutorial available explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
+
+You can [find the getting started tutorial here](tutorial/0_intro.md).
+
 ### via CLI
 
 `./properwatcher [<path-to-config-file>]`
@@ -72,8 +78,6 @@ docker run -d --restart on-failure -v /home/flo/config.toml:/opt/properwatcher.t
 ```
 
 ### via AWS Lambda
-
-There's [a 4-step tutorial](tutorial/0_intro.md) explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
 
 Create AWS Lambda function from the provided zip package (see Releases page). Configuration is done via JSON input. The provided toml configuration file can be used as blueprint. An example of a JSON configuration for the AWS Lambda would be:
 
