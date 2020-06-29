@@ -6,7 +6,7 @@ On the detail page of your function there's a box called _Designer_, which is a 
 
 ## Monitoring your lambda performance
 
-On you lambda details page, there's three tabs. By default you'll reside on _Configuration_. Head over to _Monitor_ and you'll see the success rate of all the runs that have been triggered by your scheduled event. Scroll further down to see the recent invocations and check their logs to see in detail what has happened.
+On you lambda details page, there are three tabs. By default you'll reside on _Configuration_. Head over to _Monitor_ and you'll see the success rate of all the runs that have been triggered by your scheduled event. Scroll further down to see the recent invocations and check their logs to see in detail what has happened.
 
 # Up next
 
