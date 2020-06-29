@@ -19,7 +19,7 @@ Adding mail notifications requires a SMTP mail server. Most of the free and paid
   },
   "mail": {
     "smtp_server": "smtp.gmail.com",
-    "username": "user@gmail.com",
+    "username": "<username>@gmail.com",
     "password": "<application-specific-password>"
   }
 }
