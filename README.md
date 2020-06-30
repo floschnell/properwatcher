@@ -55,13 +55,13 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 
 ### Configuration File
 
+#### TOML
+
 Settings and property queries that should be watched have to be defined in a configuration file. propertywatcher by default looks for a file called `config.toml` that resides in the same directory as the tool is run from. A sample configuration file can be found in this repository and is named [config.sample.toml](/config.sample.toml). You can create a copy and adjust it to your needs. Pay special attention to the [`watcher` section](config.sample.toml#L21). This section can be given multiple times and will tell properwatcher, where to look for new flats/houses.
 
-### Tutorial
+#### JSON
 
-There's a tutorial available explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
-
-You can [find the getting started tutorial here](tutorial/0_intro.md).
+In case of a lambda function, you'll need to translate the toml configuration into JSON. All attributes are called the same, except the _watcher_ section, which is called _watchers_ in the JSON representation of the config.
 
 ### via CLI
 
@@ -104,6 +104,12 @@ Create AWS Lambda function from the provided zip package (see Releases page). Co
 ```
 
 In the above case all found items would be stored in the configured DynamoDb table. The _dynamodb_ filter would remove items, that already exist in the database. So the _nominatim_ enricher would only process the items, that have not yet been seen by the properwatcher.
+
+#### Tutorial
+
+There's a tutorial available explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
+
+You can [find the getting started tutorial here](tutorial/0_intro.md).
 
 #### DynamoDb credentials
 
