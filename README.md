@@ -12,6 +12,12 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 - **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
 - **be the first to know**: define notifications and know about new properties immediately once they are available.
 
+## Getting Started
+
+To get you started quickly, there's a tutorial available explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
+
+You [find the getting started tutorial here](tutorial/0_intro.md).
+
 ## Modules
 
 ### Watchers (crawlers)
@@ -46,10 +52,6 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 - **mail**: Sends mails via SMTP
 - **csv**: Append directly to CSV file for offline analytics
 - **dynamodb**: Insert found entries into the configured DynamoDb table.
-
-## Pipeline
-
-![Properwatcher Pipeline](pipeline.svg)
 
 ## Usage
 
@@ -105,17 +107,15 @@ Create AWS Lambda function from the provided zip package (see Releases page). Co
 
 In the above case all found items would be stored in the configured DynamoDb table. The _dynamodb_ filter would remove items, that already exist in the database. So the _nominatim_ enricher would only process the items, that have not yet been seen by the properwatcher.
 
-#### Tutorial
-
-There's a tutorial available explaining incrementally how you can use free tier AWS functionality to schedule runs of the properwatcher tool to get instant notifications, as soon as new properties become available.
-
-You can [find the getting started tutorial here](tutorial/0_intro.md).
-
 #### DynamoDb credentials
 
 Using the DynamoDb observer from the Lambda function is very easy. Simply grant access to the database from the lambda's role in AWS IAM.
 
 ## Development
+
+### Pipeline
+
+![Properwatcher Pipeline](pipeline.svg)
 
 ### Compile for your system
 
