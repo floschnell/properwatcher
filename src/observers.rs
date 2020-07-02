@@ -1,4 +1,5 @@
 mod csv;
+mod debug;
 mod dynamodb;
 mod firebase;
 mod mail;
@@ -6,6 +7,7 @@ mod observer;
 mod telegram;
 
 pub use crate::observers::csv::CSV;
+pub use crate::observers::debug::DebugObserver;
 pub use crate::observers::dynamodb::DynamoDbObserver;
 pub use crate::observers::firebase::Firebase;
 pub use crate::observers::mail::Mail;
@@ -21,6 +23,7 @@ pub fn get_observers(app_config: &ApplicationConfig) -> Vec<Box<dyn Observer>> {
     Box::new(Mail {}),
     Box::new(CSV {}),
     Box::new(DynamoDbObserver::new(app_config)),
+    Box::new(DebugObserver {}),
   ];
   observers
     .into_iter()
