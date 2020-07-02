@@ -6,11 +6,12 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 
 ## Features
 
-- **lightweight**: low on memory and cpu
+- **lightweight**: low on memory and CPU
+- **fast**: using Firefox Quantum technology for parallel website processing
 - **modular**: modules (watchers, filters, enrichers and observers) can be (de-)activated and extended easily
-- **lambda support**: easy to use as an AWS lambda function and can be reliably scheduled via EventBridge.
+- **lambda support**: easy to use as an AWS lambda function and can be reliably scheduled via EventBridge
 - **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
-- **be the first to know**: define notifications and know about new properties immediately once they are available.
+- **be the first to know**: define notifications and know about new properties immediately once they are available
 
 ## Getting Started
 
@@ -34,8 +35,8 @@ You [find the getting started tutorial here](tutorial/0_intro.md).
 
 > Filters look at each extracted entry and may remove it, before it gets enriched or observed. This could be, because it has already been processed in the past or it is not interesting in any way.
 
-- **dynamodb**: checks if the item already exists in the configured DynamoDb.
-- **csv**: checks if the item has already been written to the configured csv.
+- **dynamodb**: checks if the item already exists in the configured DynamoDb
+- **csv**: checks if the item has already been written to the configured csv
 
 ### Enrichers
 
@@ -51,7 +52,8 @@ You [find the getting started tutorial here](tutorial/0_intro.md).
 - **telegram**: Sends messages to any Telegram chat
 - **mail**: Sends mails via SMTP
 - **csv**: Append directly to CSV file for offline analytics
-- **dynamodb**: Insert found entries into the configured DynamoDb table.
+- **dynamodb**: Insert found entries into the configured DynamoDb table
+- **debug**: Print every observation in readable format to stdout
 
 ## Usage
 
