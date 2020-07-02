@@ -5,6 +5,7 @@ mod filters;
 mod models;
 mod observers;
 
+use crate::crawlers::Crawler;
 use crate::enrichers::get_enrichers;
 use crate::filters::get_filters;
 use crate::models::Property;
@@ -113,7 +114,7 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
 
   let crawl_duration = crawl_start.elapsed();
   println!(
-    "analyzed {} pages and found {} properties in {}.{} seconds.",
+    "analyzed {} pages and found {} properties in {}.{:03} seconds.",
     app_config.watchers.len(),
     properties.len(),
     crawl_duration.as_secs(),
@@ -181,15 +182,18 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
       .collect();
 
     let processing_duration = processing_start.elapsed();
+    if properties.len() > 0 {
+      print!(" ")
+    };
     println!(
-      "completed in {}.{} seconds.",
+      "completed in {}.{:03} seconds.",
       processing_duration.as_secs(),
       processing_duration.subsec_millis()
     );
 
     let run_duration = run_started.elapsed();
     println!(
-      "run took {}.{} seconds and successfully processed {} items.",
+      "run took {}.{:03} seconds and successfully processed {} items.",
       run_duration.as_secs(),
       run_duration.subsec_millis(),
       properties.len()
@@ -204,16 +208,23 @@ fn run_thread(
   thread_number: usize,
   app_config: &ApplicationConfig,
 ) -> Vec<Property> {
+  let crawlers: Vec<Box<dyn Crawler>> = crawlers::get_crawlers();
   let mut properties: Vec<Property> = vec![];
   loop {
-    let config_opt = guarded_configs.lock().unwrap().pop();
+    let config_opt: Option<Config> = match guarded_configs.lock() {
+      Ok(mut guard) => guard.pop(),
+      Err(e) => {
+        eprintln!(
+          "Could not acquire lock on shared configurations: {}.",
+          e.to_string()
+        );
+        continue;
+      }
+    };
     match config_opt {
       Some(crawl_config) => {
-        properties.append(&mut process_config(
-          &app_config,
-          &crawl_config,
-          thread_number,
-        ));
+        let results = &mut process_config(&crawlers, &app_config, &crawl_config, thread_number);
+        properties.append(results);
       }
       None => break,
     }
@@ -222,11 +233,12 @@ fn run_thread(
 }
 
 fn process_config(
+  crawlers: &Vec<Box<dyn Crawler>>,
   app_config: &ApplicationConfig,
   crawl_config: &Config,
   thread_number: usize,
 ) -> Vec<Property> {
-  let crawler = crawlers::get_crawler(&crawl_config.crawler);
+  let crawler = crawlers::get_crawler(&crawl_config.crawler, crawlers);
   match crawler {
     Ok(crawler) => {
       println!(

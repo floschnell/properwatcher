@@ -28,8 +28,11 @@ pub fn get_crawlers() -> Vec<Box<dyn Crawler>> {
   ]
 }
 
-pub fn get_crawler(name: &String) -> Result<Box<dyn Crawler>, Error> {
-  for crawler in get_crawlers() {
+pub fn get_crawler<'a>(
+  name: &String,
+  crawlers: &'a Vec<Box<dyn Crawler>>,
+) -> Result<&'a Box<dyn Crawler>, Error> {
+  for crawler in crawlers {
     if crawler.metadata().name == name.to_owned() {
       return Ok(crawler);
     }

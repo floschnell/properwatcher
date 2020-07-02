@@ -9,6 +9,7 @@ use crate::models::{Encoding, Property};
 use kuchiki::iter::*;
 use kuchiki::traits::*;
 use reqwest::blocking::Response;
+use std::time::Instant;
 
 #[derive(Debug)]
 pub struct Error {
@@ -64,14 +65,13 @@ pub fn execute(config: &Config, crawler: &Box<dyn Crawler>) -> Result<Vec<Proper
   Ok(successful)
 }
 
-fn decode_response(response: &mut Response, encoding: &Encoding) -> Result<String, Error> {
-  let mut buf: Vec<u8> = vec![];
-  response.copy_to(&mut buf)?;
+fn decode_response(response: Response, encoding: &Encoding) -> Result<String, Error> {
+  let buf: Vec<u8> = response.bytes().unwrap().to_vec();
   let (encoded_string, _, _) = match encoding {
     Encoding::Latin1 => encoding_rs::ISO_8859_2.decode(&buf),
     Encoding::Utf8 => encoding_rs::UTF_8.decode(&buf),
   };
-  Ok(encoded_string.into_owned())
+  Ok(encoded_string.into())
 }
 
 fn get_results(
@@ -80,19 +80,27 @@ fn get_results(
 ) -> Result<Select<Elements<Descendants>>, Error> {
   let url = config.address.to_owned();
 
+  let request_start = Instant::now();
   crawler.log(format!(">> sending request to url '{}' ... ", url));
-  let mut response = reqwest::blocking::get(url.as_str())?;
-  crawler.log(format!("<< received response."));
+  let response = reqwest::blocking::get(url.as_str())?;
+  crawler.log(format!(
+    "<< received response in {} ms.",
+    request_start.elapsed().as_millis()
+  ));
 
+  let parsing_start = Instant::now();
   crawler.log(format!("parsing document ..."));
-  let decoded_response = decode_response(&mut response, &crawler.metadata().encoding)?;
+  let decoded_response = decode_response(response, &crawler.metadata().encoding)?;
   let document = kuchiki::parse_html()
     .from_utf8()
     .read_from(&mut decoded_response.as_bytes())?;
-  crawler.log(format!("document parsed successfully."));
+  crawler.log(format!(
+    "document parsed successfully in {} ms.",
+    parsing_start.elapsed().as_millis()
+  ));
 
   match document.select(crawler.selector()) {
-    Ok(x) => Ok(x),
+    Ok(nodes) => Ok(nodes),
     Err(()) => Err(Error {
       message: "Main selector did not match.".to_owned(),
     }),
