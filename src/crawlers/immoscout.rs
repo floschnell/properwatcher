@@ -32,11 +32,13 @@ impl Crawler for ImmoScout {
     let plot_squaremeters =
       Self::get_text(&result, ".result-list-entry__criteria dl:nth-child(4) dd")
         .map_or(None, |s| Self::parse_number(s).map_or(None, |f| Some(f)));
-    let title = Self::get_text(&result, ".result-list-entry__brand-title")?;
+    let title = Self::get_text(&result, ".result-list-entry__brand-title")?
+      .trim_start_matches("NEU")
+      .to_string();
     let address = Self::get_text(&result, ".result-list-entry__map-link")?;
     let externalid = Self::get_attr(&result, None, "data-obid")?
       .trim()
-      .to_owned();
+      .to_string();
     let tags = Self::get_texts(&result, ".result-list-entry__secondary-criteria li")?
       .into_iter()
       .filter(|tag| tag != "...")
