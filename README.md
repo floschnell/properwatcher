@@ -37,6 +37,7 @@ You [find the getting started tutorial here](tutorial/0_intro.md).
 
 - **dynamodb**: checks if the item already exists in the configured DynamoDb
 - **csv**: checks if the item has already been written to the configured csv
+- **criteria**: filter properties for price, size and number of rooms
 
 ### Enrichers
 
