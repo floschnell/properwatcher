@@ -3,7 +3,7 @@ mod csv;
 mod dynamodb;
 mod filter;
 
-pub use crate::filters::criteria::{CriteriaConfig, CriteriaFilter};
+pub use crate::filters::criteria::CriteriaFilter;
 pub use crate::filters::csv::CSV;
 pub use crate::filters::dynamodb::DynamoDbFilter;
 pub use crate::filters::filter::{Filter, FilterError};

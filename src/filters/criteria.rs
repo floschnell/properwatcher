@@ -1,19 +1,9 @@
+use crate::configuration::CriteriaConfig;
 use crate::filters::{Filter, FilterError};
 use crate::models::Property;
 use crate::ApplicationConfig;
-use serde_derive::{Deserialize, Serialize};
 
 pub struct CriteriaFilter {}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct CriteriaConfig {
-  pub price_min: Option<f32>,
-  pub price_max: Option<f32>,
-  pub squaremeters_min: Option<f32>,
-  pub squaremeters_max: Option<f32>,
-  pub rooms_min: Option<f32>,
-  pub rooms_max: Option<f32>,
-}
 
 impl Filter for CriteriaFilter {
   fn name(&self) -> String {
@@ -128,7 +118,7 @@ mod tests {
       rooms_max: None,
     };
     let filter = CriteriaFilter {};
-    let property = Property::new_simple(100.0, 85.0, 2.0);
+    let property = Property::dummy(100.0, 85.0, 2.0);
 
     // WHEN
     let result = filter.evaluate(&property, &criteria);
@@ -149,7 +139,7 @@ mod tests {
       rooms_max: None,
     };
     let filter = CriteriaFilter {};
-    let property = Property::new_simple(200.0, 85.0, 2.0);
+    let property = Property::dummy(200.0, 85.0, 2.0);
 
     // WHEN
     let result = filter.evaluate(&property, &criteria);

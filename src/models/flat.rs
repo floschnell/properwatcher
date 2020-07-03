@@ -97,7 +97,8 @@ impl Property {
       }
   }
 
-  pub fn new_simple(price: f32, squaremeters: f32, rooms: f32) -> Property {
+  #[cfg(test)]
+  pub fn dummy(price: f32, squaremeters: f32, rooms: f32) -> Property {
     Property {
       date: Utc::now().timestamp(),
       enrichments: HashMap::new(),
@@ -150,27 +151,17 @@ mod tests {
 
   #[test]
   fn compare_flat_too_simple() {
-    let flat_a = Property {
-      source: String::from("some source A"),
-      city: String::from("Munich"),
-      date: 0,
-      data: None,
-      enrichments: HashMap::new(),
-    };
+    // GIVEN
+    let flat_a = Property::new(String::from("some source A"), String::from("Munich"));
+    let flat_b = Property::new(String::from("some source A"), String::from("Munich"));
 
-    let flat_b = Property {
-      source: String::from("some source A"),
-      city: String::from("Munich"),
-      date: 0,
-      data: None,
-      enrichments: HashMap::new(),
-    };
-
+    // THEN
     assert_ne!(flat_a, flat_b);
   }
 
   #[test]
   fn compare_flat_simple() {
+    // GIVEN
     let flat_a = Property {
       source: String::from("some source A"),
       city: String::from("Munich"),
@@ -190,7 +181,6 @@ mod tests {
       }),
       enrichments: HashMap::new(),
     };
-
     let flat_b = Property {
       source: String::from("some source A"),
       city: String::from("Munich"),
@@ -211,11 +201,13 @@ mod tests {
       enrichments: HashMap::new(),
     };
 
+    // THEN
     assert_eq!(flat_a, flat_b);
   }
 
   #[test]
   fn compare_flat_complex() {
+    // GIVEN
     let flat_a = Property {
       source: String::from("some source A"),
       city: String::from("Munich"),
@@ -235,7 +227,6 @@ mod tests {
       }),
       enrichments: HashMap::new(),
     };
-
     let flat_b = Property {
       source: String::from("some source B"),
       city: String::from("Munich"),
@@ -256,11 +247,13 @@ mod tests {
       enrichments: HashMap::new(),
     };
 
+    // THEN
     assert_eq!(flat_a, flat_b);
   }
 
   #[test]
   fn compare_flat_complex_special_chars() {
+    // GIVEN
     let flat_a = Property {
       source: String::from("some source A"),
       city: String::from("Munich"),
@@ -280,7 +273,6 @@ mod tests {
       }),
       enrichments: HashMap::new(),
     };
-
     let flat_b = Property {
       source: String::from("some source B"),
       city: String::from("Munich"),
@@ -301,32 +293,23 @@ mod tests {
       enrichments: HashMap::new(),
     };
 
+    // THEN
     assert_eq!(flat_a, flat_b);
   }
 
   #[test]
   fn compare_flat_not_equal() {
-    let flat_a = Property {
-      source: String::from("some source A"),
-      city: String::from("Munich"),
-      date: 0,
-      data: None,
-      enrichments: HashMap::new(),
-    };
+    // GIVEN
+    let flat_a = Property::new(String::from("some source A"), String::from("Munich"));
+    let flat_b = Property::new(String::from("some source B"), String::from("Munich"));
 
-    let flat_b = Property {
-      source: String::from("some source B"),
-      city: String::from("Munich"),
-      date: 0,
-      data: None,
-      enrichments: HashMap::new(),
-    };
-
+    // THEN
     assert_ne!(flat_a, flat_b);
   }
 
   #[test]
   fn compare_flat_complex_not_equal() {
+    // GIVEN
     let flat_a = Property {
       source: String::from("some source A"),
       city: String::from("Munich"),
@@ -346,7 +329,6 @@ mod tests {
       }),
       enrichments: HashMap::new(),
     };
-
     let flat_b = Property {
       source: String::from("some source B"),
       city: String::from("Munich"),
@@ -367,6 +349,7 @@ mod tests {
       enrichments: HashMap::new(),
     };
 
+    // THEN
     assert_ne!(flat_a, flat_b);
   }
 }

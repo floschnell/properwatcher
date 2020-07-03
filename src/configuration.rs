@@ -1,7 +1,16 @@
 use crate::crawlers::Config as CrawlerConfig;
-use crate::filters::CriteriaConfig;
 use config::{Config, File};
 use serde_derive::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CriteriaConfig {
+  pub price_min: Option<f32>,
+  pub price_max: Option<f32>,
+  pub squaremeters_min: Option<f32>,
+  pub squaremeters_max: Option<f32>,
+  pub rooms_min: Option<f32>,
+  pub rooms_max: Option<f32>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TelegramConfig {
