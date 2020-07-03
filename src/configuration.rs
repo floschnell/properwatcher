@@ -1,4 +1,5 @@
 use crate::crawlers::Config as CrawlerConfig;
+use crate::filters::CriteriaConfig;
 use config::{Config, File};
 use serde_derive::{Deserialize, Serialize};
 
@@ -63,6 +64,8 @@ pub struct ApplicationConfig {
   pub mail: MailConfig,
   #[serde(default = "default_csv")]
   pub csv: CSVConfig,
+  #[serde(default = "default_criteria")]
+  pub criteria: CriteriaConfig,
   #[serde(default = "default_observers")]
   pub observers: Vec<String>,
   #[serde(default = "default_enrichers")]
@@ -122,6 +125,16 @@ fn default_csv() -> CSVConfig {
     filename: String::from(""),
   }
 }
+fn default_criteria() -> CriteriaConfig {
+  CriteriaConfig {
+    price_min: None,
+    price_max: None,
+    squaremeters_min: None,
+    squaremeters_max: None,
+    rooms_min: None,
+    rooms_max: None,
+  }
+}
 fn default_observers() -> Vec<String> {
   vec![]
 }
@@ -141,12 +154,12 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let initial_run = config.get("initial_run").unwrap_or(false);
   let run_periodically = config.get("run_periodically").unwrap_or(true);
 
-  let telegram_api_key = config.get("telegram.api_key").unwrap_or(String::from(""));
-  let telegram_chat_id = config.get("telegram.chat_id").unwrap_or(String::from(""));
+  let telegram_api_key = config.get("telegram.api_key").unwrap_or(String::new());
+  let telegram_chat_id = config.get("telegram.chat_id").unwrap_or(String::new());
 
-  let mail_smtp_server = config.get("mail.smtp_server").unwrap_or(String::from(""));
-  let mail_username = config.get("mail.username").unwrap_or(String::from(""));
-  let mail_password = config.get("mail.password").unwrap_or(String::from(""));
+  let mail_smtp_server = config.get("mail.smtp_server").unwrap_or(String::new());
+  let mail_username = config.get("mail.username").unwrap_or(String::new());
+  let mail_password = config.get("mail.password").unwrap_or(String::new());
 
   let csv_filename = config
     .get("csv.filename")
@@ -173,15 +186,16 @@ pub fn read(config_path: String) -> ApplicationConfig {
     .get("dynamodb.region")
     .unwrap_or(String::from("eu-central-1"));
 
-  let filters = config
-    .get("filters")
-    .unwrap_or(vec![]);
-  let enrichers = config
-    .get("enrichers")
-    .unwrap_or(vec![]);
-  let observers = config
-    .get("observers")
-    .unwrap_or(vec![]);
+  let criteria_price_min = config.get("criteria.price_min").ok();
+  let criteria_price_max = config.get("criteria.price_max").ok();
+  let criteria_squaremeters_min = config.get("criteria.squaremeters_min").ok();
+  let criteria_squaremeters_max = config.get("criteria.squaremeters_max").ok();
+  let criteria_rooms_min = config.get("criteria.rooms_min").ok();
+  let criteria_rooms_max = config.get("criteria.rooms_max").ok();
+
+  let filters = config.get("filters").unwrap_or(vec![]);
+  let enrichers = config.get("enrichers").unwrap_or(vec![]);
+  let observers = config.get("observers").unwrap_or(vec![]);
 
   let mut crawler_configs: Vec<CrawlerConfig> = vec![];
   let watcher_arr = config.get_array("watcher").unwrap();
@@ -254,6 +268,14 @@ pub fn read(config_path: String) -> ApplicationConfig {
     dynamodb: DynamoDbConfig {
       table_name: dynamodb_table_name,
       region: dynamodb_region,
+    },
+    criteria: CriteriaConfig {
+      price_min: criteria_price_min,
+      price_max: criteria_price_max,
+      squaremeters_min: criteria_squaremeters_min,
+      squaremeters_max: criteria_squaremeters_max,
+      rooms_min: criteria_rooms_min,
+      rooms_max: criteria_rooms_max,
     },
     observers,
     filters,

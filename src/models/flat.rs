@@ -97,6 +97,28 @@ impl Property {
       }
   }
 
+  pub fn new_simple(price: f32, squaremeters: f32, rooms: f32) -> Property {
+    Property {
+      date: Utc::now().timestamp(),
+      enrichments: HashMap::new(),
+      source: String::new(),
+      city: String::new(),
+      data: Some(PropertyData {
+        price,
+        squaremeters,
+        address: String::new(),
+        title: String::new(),
+        externalid: String::new(),
+        plot_squaremeters: None,
+        rooms,
+        contract_type: ContractType::Rent,
+        property_type: PropertyType::Flat,
+        tags: vec![],
+        url: String::new(),
+      }),
+    }
+  }
+
   pub fn new(source: String, city: String) -> Property {
     Property {
       date: Utc::now().timestamp(),
