@@ -1,6 +1,7 @@
 use crate::models::{ContractType, Property, PropertyType};
 use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use rusoto_core::Region;
 use rusoto_dynamodb::{DynamoDb, DynamoDbClient, PutItemInput};
 use serde_derive::{Deserialize, Serialize};
@@ -46,6 +47,7 @@ struct DynamoDbEntry {
   pub longitude: Option<f32>,
 }
 
+#[async_trait]
 impl Observer for DynamoDbObserver {
   fn name(&self) -> String {
     String::from("dynamodb")
@@ -55,7 +57,7 @@ impl Observer for DynamoDbObserver {
     Ok(())
   }
 
-  fn observation(
+  async fn observation(
     &self,
     app_config: &ApplicationConfig,
     property: &Property,
@@ -108,7 +110,7 @@ impl Observer for DynamoDbObserver {
         ..Default::default()
       };
 
-      let put_result = self.client.put_item(put_item_input).sync();
+      let put_result = self.client.put_item(put_item_input).await;
       match put_result {
         Ok(_) => Ok(()),
         Err(error) => Err(ObserverError {

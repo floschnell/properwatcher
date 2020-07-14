@@ -21,18 +21,19 @@ use std::thread;
 use std::thread::JoinHandle;
 use std::time::Instant;
 
-fn run_lambda(e: ApplicationConfig, _: Context) -> Result<Vec<Property>, HandlerError> {
-  let properties = run(&e, true);
-  Ok(properties)
-}
+// fn run_lambda(e: ApplicationConfig, _: Context) -> Result<Vec<Property>, HandlerError> {
+//   let properties = run(&e, true);
+//   Ok(properties)
+// }
 
-fn main() {
+#[tokio::main]
+async fn main() {
   let args: Vec<String> = env::args().collect();
 
-  if env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
-    println!("Running lambda ...");
-    lambda!(run_lambda);
-  }
+  // if env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
+  //   println!("Running lambda ...");
+  //   lambda!(run_lambda);
+  // }
 
   let config_path: String = args
     .get(1)
@@ -45,7 +46,7 @@ fn main() {
 
   let mut initial_run = app_config.initial_run;
   loop {
-    run(&app_config, !initial_run);
+    run(&app_config, !initial_run).await;
     if initial_run {
       initial_run = false;
       println!("initial run finished.");
@@ -63,7 +64,7 @@ fn main() {
   }
 }
 
-fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
+async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   let observers = get_observers(&app_config);
   let enrichers = get_enrichers(&app_config);
   let mut filters = get_filters(&app_config);
@@ -106,7 +107,7 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   barrier.wait();
 
   // collect results
-  let mut properties = thread_handles
+  let properties = thread_handles
     .into_iter()
     .map(|h| h.join().unwrap_or_default())
     .flatten()
@@ -128,61 +129,53 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
     print!("processing properties ");
     let _ = std::io::stdout().flush();
     let processing_start = Instant::now();
-    properties = properties
-      .into_iter()
-      // running filters
-      .filter(|property| {
+
+    let mut processed_properties = vec![];
+
+    for mut property in properties {
+      let property_ref = &property;
+      if futures::future::join_all(
         filters
           .iter_mut()
-          .all(|f| match f.filter(app_config, property) {
-            Ok(result) => result,
-            Err(e) => {
-              eprintln!("Error while running filter {}: {}", &f.name(), e.message);
-              true
+          .map(|f| async move {
+            match f.filter(app_config, property_ref).await {
+              Ok(r) => r,
+              Err(e) => {
+                eprintln!("Error during filter: {}", e.message);
+                true
+              }
             }
           })
-      })
-      .inspect(|_| {
-        print!(".");
-        let _ = std::io::stdout().flush();
-      })
-      // running enrichers
-      .map(|property| {
-        enrichers.iter().fold(property, |property, enricher| {
-          match enricher.enrich(app_config, &property) {
-            Ok(enriched_property) => enriched_property,
-            Err(e) => {
-              eprintln!(
-                "Error while running enricher {}: {}",
-                &enricher.name(),
-                e.message
-              );
-              property
+          .map(Box::pin),
+      )
+      .await
+      .into_iter()
+      .all(|x| x)
+      {
+        for enricher in &enrichers {
+          property = match enricher.enrich(app_config, &property) {
+            Ok(p) => p,
+            Err(_) => {
+              println!("Error during enriching!");
+              continue;
             }
-          }
-        })
-      })
-      // running observers
-      .inspect(|property| {
-        if app_config.test {
-          println!("{:?}", property);
-        } else {
-          observers.iter().for_each(
-            |observer| match observer.observation(app_config, property) {
-              Ok(_) => (),
-              Err(e) => eprintln!(
-                "Error while running observer {}: {}",
-                &observer.name(),
-                e.message
-              ),
-            },
-          )
+          };
         }
-      })
-      .collect();
+
+        futures::future::join_all(
+          observers
+            .iter()
+            .map(|observer| observer.observation(app_config, &property))
+            .map(Box::pin),
+        )
+        .await;
+
+        processed_properties.push(property);
+      }
+    }
 
     let processing_duration = processing_start.elapsed();
-    if properties.len() > 0 {
+    if processed_properties.len() > 0 {
       print!(" ")
     };
     println!(
@@ -196,10 +189,10 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
       "run took {}.{:03} seconds and successfully processed {} items.",
       run_duration.as_secs(),
       run_duration.subsec_millis(),
-      properties.len()
+      processed_properties.len()
     );
 
-    properties
+    processed_properties
   }
 }
 

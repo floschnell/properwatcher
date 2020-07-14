@@ -1,5 +1,6 @@
 use crate::models::Property;
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 
 pub struct ObserverError {
   pub message: String,
@@ -13,10 +14,11 @@ impl From<std::io::Error> for ObserverError {
   }
 }
 
+#[async_trait]
 pub trait Observer {
   fn name(&self) -> String;
   fn init(&mut self, app_config: &ApplicationConfig) -> Result<(), String>;
-  fn observation(
+  async fn observation(
     &self,
     app_config: &ApplicationConfig,
     property: &Property,

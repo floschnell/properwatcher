@@ -1,12 +1,14 @@
 use crate::models::{ContractType, Property, PropertyType};
 use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use std::collections::HashMap;
 
 use num_format::{Locale, ToFormattedString};
 
 pub struct Telegram {}
 
+#[async_trait]
 impl Observer for Telegram {
   fn name(&self) -> String {
     String::from("telegram")
@@ -16,7 +18,7 @@ impl Observer for Telegram {
     Ok(())
   }
 
-  fn observation(
+  async fn observation(
     &self,
     app_config: &ApplicationConfig,
     property: &Property,
