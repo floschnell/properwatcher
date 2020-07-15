@@ -17,23 +17,21 @@ use std::env;
 use std::io::prelude::*;
 use std::sync::Mutex;
 use std::sync::{Arc, Barrier};
-use std::thread;
-use std::thread::JoinHandle;
 use std::time::Instant;
 
-// fn run_lambda(e: ApplicationConfig, _: Context) -> Result<Vec<Property>, HandlerError> {
-//   let properties = run(&e, true);
-//   Ok(properties)
-// }
+fn run_lambda(e: ApplicationConfig, _: Context) -> Result<Vec<Property>, HandlerError> {
+  let properties = futures::executor::block_on(run(&e, true));
+  Ok(properties)
+}
 
 #[tokio::main]
 async fn main() {
   let args: Vec<String> = env::args().collect();
 
-  // if env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
-  //   println!("Running lambda ...");
-  //   lambda!(run_lambda);
-  // }
+  if env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
+    println!("Running lambda ...");
+    lambda!(run_lambda);
+  }
 
   let config_path: String = args
     .get(1)
@@ -90,13 +88,13 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
   let guarded_configs = Arc::new(Mutex::new(app_config.watchers.to_owned()));
 
   // process all crawlers
-  let mut thread_handles: Vec<JoinHandle<Vec<Property>>> = vec![];
+  let mut thread_handles: Vec<_> = vec![];
   for i in 0..thread_count {
     let inner_guarded_configs = guarded_configs.clone();
     let inner_barrier = barrier.clone();
     let cap_conf = app_config.clone();
-    let handle = thread::spawn(move || {
-      let properties = run_thread(inner_guarded_configs, i, &cap_conf);
+    let handle = tokio::spawn(async move {
+      let properties = run_thread(inner_guarded_configs, i, &cap_conf).await;
       inner_barrier.wait();
       properties
     });
@@ -107,11 +105,17 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
   barrier.wait();
 
   // collect results
-  let properties = thread_handles
-    .into_iter()
-    .map(|h| h.join().unwrap_or_default())
-    .flatten()
-    .collect::<Vec<_>>();
+  let x = futures::future::join_all(thread_handles).await;
+  let properties: Vec<_> = futures::future::join_all(x.into_iter().map(|r| async {
+    match r {
+      Ok(x) => x,
+      Err(_) => vec![],
+    }
+  }))
+  .await
+  .into_iter()
+  .flatten()
+  .collect();
 
   let crawl_duration = crawl_start.elapsed();
   println!(
@@ -129,45 +133,48 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
     print!("processing properties ");
     let _ = std::io::stdout().flush();
     let processing_start = Instant::now();
-
     let mut processed_properties = vec![];
 
     for mut property in properties {
       let property_ref = &property;
-      if futures::future::join_all(
-        filters
-          .iter_mut()
-          .map(|f| async move {
-            match f.filter(app_config, property_ref).await {
-              Ok(r) => r,
-              Err(e) => {
-                eprintln!("Error during filter: {}", e.message);
-                true
-              }
-            }
-          })
-          .map(Box::pin),
-      )
+      if futures::future::join_all(filters.iter_mut().map(|f| async move {
+        match f.filter(app_config, property_ref).await {
+          Ok(r) => r,
+          Err(e) => {
+            eprintln!("Error during filter: {}", e.message);
+            true
+          }
+        }
+      }))
       .await
       .into_iter()
-      .all(|x| x)
+      .all(std::convert::identity)
       {
         for enricher in &enrichers {
           property = match enricher.enrich(app_config, &property) {
             Ok(p) => p,
-            Err(_) => {
-              println!("Error during enriching!");
-              continue;
+            Err(e) => {
+              eprintln!(
+                "Error while running enricher {}: {}",
+                &enricher.name(),
+                e.message
+              );
+              property
             }
           };
         }
 
-        futures::future::join_all(
-          observers
-            .iter()
-            .map(|observer| observer.observation(app_config, &property))
-            .map(Box::pin),
-        )
+        let property_ref = &property;
+        futures::future::join_all(observers.iter().map(|observer| async move {
+          match observer.observation(app_config, property_ref).await {
+            Ok(_) => (),
+            Err(e) => eprintln!(
+              "Error while running observer {}: {}",
+              &observer.name(),
+              e.message
+            ),
+          }
+        }))
         .await;
 
         processed_properties.push(property);
@@ -196,7 +203,7 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
   }
 }
 
-fn run_thread(
+async fn run_thread(
   guarded_configs: Arc<Mutex<Vec<Config>>>,
   thread_number: usize,
   app_config: &ApplicationConfig,
@@ -216,7 +223,8 @@ fn run_thread(
     };
     match config_opt {
       Some(crawl_config) => {
-        let results = &mut process_config(&crawlers, &app_config, &crawl_config, thread_number);
+        let results =
+          &mut process_config(&crawlers, &app_config, &crawl_config, thread_number).await;
         properties.append(results);
       }
       None => break,
@@ -225,7 +233,7 @@ fn run_thread(
   properties
 }
 
-fn process_config(
+async fn process_config(
   crawlers: &Vec<Box<dyn Crawler>>,
   app_config: &ApplicationConfig,
   crawl_config: &Config,
@@ -239,7 +247,7 @@ fn process_config(
         crawler.metadata().name,
         thread_number
       );
-      let properties_result = crawlers::execute(crawl_config, &crawler);
+      let properties_result = crawlers::execute(crawl_config, &crawler).await;
       if properties_result.is_ok() {
         let properties = properties_result.unwrap();
         if app_config.test {
