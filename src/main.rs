@@ -106,17 +106,20 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
   barrier.wait();
 
   // collect results
-  let x = futures::future::join_all(thread_handles).await;
-  let properties: Vec<_> = futures::future::join_all(x.into_iter().map(|r| async {
-    match r {
-      Ok(x) => x,
-      Err(_) => vec![],
-    }
-  }))
-  .await
-  .into_iter()
-  .flatten()
-  .collect();
+  let thread_results = futures::future::join_all(thread_handles)
+    .await
+    .into_iter()
+    .map(|result| async {
+      match result {
+        Ok(thread_properties) => thread_properties,
+        Err(_) => vec![],
+      }
+    });
+  let properties: Vec<_> = futures::future::join_all(thread_results)
+    .await
+    .into_iter()
+    .flatten()
+    .collect();
 
   let crawl_duration = crawl_start.elapsed();
   println!(
@@ -138,11 +141,11 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
 
     for mut property in properties {
       let property_ref = &property;
-      if futures::future::join_all(filters.iter_mut().map(|f| async move {
-        match f.filter(app_config, property_ref).await {
-          Ok(r) => r,
-          Err(e) => {
-            eprintln!("Error during filter: {}", e.message);
+      if futures::future::join_all(filters.iter_mut().map(|filter| async move {
+        match filter.filter(app_config, property_ref).await {
+          Ok(result) => result,
+          Err(err) => {
+            eprintln!("Error during filter: {}", err.message);
             true
           }
         }
@@ -155,11 +158,11 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
         futures::future::join_all(enrichers.iter().map(|enricher| async move {
           match enricher.enrich(app_config, property_ref).await {
             Ok(enrichments) => enrichments,
-            Err(e) => {
+            Err(err) => {
               eprintln!(
                 "Error while running enricher {}: {}",
                 &enricher.name(),
-                e.message
+                err.message
               );
               HashMap::new()
             }
@@ -176,10 +179,10 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
         futures::future::join_all(observers.iter().map(|observer| async move {
           match observer.observation(app_config, property_ref).await {
             Ok(_) => (),
-            Err(e) => eprintln!(
+            Err(err) => eprintln!(
               "Error while running observer {}: {}",
               &observer.name(),
-              e.message
+              err.message
             ),
           }
         }))
