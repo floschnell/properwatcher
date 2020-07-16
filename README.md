@@ -9,7 +9,7 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 ## Features
 
 - 🦋 **lightweight**: low on memory and CPU
-- ⚡ **fast**: parallel & async website processing using [Firefox' Servo technology](<https://de.wikipedia.org/wiki/Servo_(Software)>)
+- ⚡ **fast**: parallel & async website processing using Firefox technology
 - 📦 **modular**: modules (watchers, filters, enrichers and observers) can be (de-)activated and extended easily
 - ☁️ **lambda support**: easy to use as an AWS lambda function and can be reliably scheduled via EventBridge
 - 👶 **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
