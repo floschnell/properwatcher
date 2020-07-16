@@ -1,8 +1,10 @@
 use crate::enrichers::{Enricher, EnricherError};
 use crate::models::Property;
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use reqwest::header::HeaderValue;
 use reqwest::header::USER_AGENT;
+use std::collections::HashMap;
 
 extern crate reqwest;
 extern crate serde;
@@ -71,6 +73,7 @@ impl From<ParseFloatError> for Error {
 
 pub struct Nominatim {}
 
+#[async_trait]
 impl Enricher for Nominatim {
   fn name(&self) -> String {
     String::from("nominatim")
@@ -80,28 +83,28 @@ impl Enricher for Nominatim {
     Ok(())
   }
 
-  fn enrich(
+  async fn enrich(
     &self,
     app_config: &ApplicationConfig,
     property: &Property,
-  ) -> Result<Property, EnricherError> {
+  ) -> Result<HashMap<String, String>, EnricherError> {
     match &property.data {
-      Some(data) => match geocode(app_config, &data.address) {
+      Some(data) => match geocode(app_config, &data.address).await {
         Ok(geocode_result) => {
-          let mut property_enriched = property.clone();
-          property_enriched.enrichments.insert(
+          let mut enrichments = HashMap::new();
+          enrichments.insert(
             String::from("latitude"),
             geocode_result.coord.latitude.to_string(),
           );
-          property_enriched.enrichments.insert(
+          enrichments.insert(
             String::from("longitude"),
             geocode_result.coord.longitude.to_string(),
           );
-          property_enriched.enrichments.insert(
+          enrichments.insert(
             String::from("uncertainty"),
             geocode_result.uncertainty.to_string(),
           );
-          Ok(property_enriched)
+          Ok(enrichments)
         }
         Err(e) => {
           println!("error during geocoding: {:?}", e);
@@ -115,8 +118,11 @@ impl Enricher for Nominatim {
   }
 }
 
-pub fn geocode(app_config: &ApplicationConfig, address: &String) -> Result<GeocodeResult, Error> {
-  let client = reqwest::blocking::Client::new();
+pub async fn geocode(
+  app_config: &ApplicationConfig,
+  address: &String,
+) -> Result<GeocodeResult, Error> {
+  let client = reqwest::Client::new();
 
   let mut url = url::Url::parse(app_config.nominatim.nominatim_url.as_str())?;
   url
@@ -130,11 +136,12 @@ pub fn geocode(app_config: &ApplicationConfig, address: &String) -> Result<Geoco
       USER_AGENT,
       HeaderValue::from_str(app_config.nominatim.user_agent.as_str()).unwrap(),
     )
-    .send()?;
+    .send()
+    .await?;
   let one_second = std::time::Duration::from_secs(1);
   std::thread::sleep(one_second);
 
-  let result: Vec<ApiResult> = response.json()?;
+  let result: Vec<ApiResult> = response.json().await?;
 
   if result.len() >= 1 {
     let best_match: &ApiResult = result.get(0).expect("Results have been empty!");

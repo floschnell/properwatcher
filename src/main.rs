@@ -13,6 +13,7 @@ use crate::observers::get_observers;
 use configuration::ApplicationConfig;
 use crawlers::Config;
 use lambda_runtime::{error::HandlerError, lambda, Context};
+use std::collections::HashMap;
 use std::env;
 use std::io::prelude::*;
 use std::sync::Mutex;
@@ -150,19 +151,26 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
       .into_iter()
       .all(std::convert::identity)
       {
-        for enricher in &enrichers {
-          property = match enricher.enrich(app_config, &property) {
-            Ok(p) => p,
+        let property_ref = &property;
+        futures::future::join_all(enrichers.iter().map(|enricher| async move {
+          match enricher.enrich(app_config, property_ref).await {
+            Ok(enrichments) => enrichments,
             Err(e) => {
               eprintln!(
                 "Error while running enricher {}: {}",
                 &enricher.name(),
                 e.message
               );
-              property
+              HashMap::new()
             }
-          };
-        }
+          }
+        }))
+        .await
+        .into_iter()
+        .flatten()
+        .for_each(|(k, v)| {
+          property.enrichments.insert(k, v);
+        });
 
         let property_ref = &property;
         futures::future::join_all(observers.iter().map(|observer| async move {
