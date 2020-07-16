@@ -209,7 +209,7 @@ async fn run_thread(
   app_config: &ApplicationConfig,
 ) -> Vec<Property> {
   let crawlers: Vec<Box<dyn Crawler>> = crawlers::get_crawlers();
-  let mut properties: Vec<Property> = vec![];
+  let mut futures: Vec<_> = vec![];
   loop {
     let config_opt: Option<Config> = match guarded_configs.lock() {
       Ok(mut guard) => guard.pop(),
@@ -223,20 +223,23 @@ async fn run_thread(
     };
     match config_opt {
       Some(crawl_config) => {
-        let results =
-          &mut process_config(&crawlers, &app_config, &crawl_config, thread_number).await;
-        properties.append(results);
+        let future = process_config(&crawlers, &app_config, crawl_config.clone(), thread_number);
+        futures.push(Box::pin(future));
       }
       None => break,
     }
   }
-  properties
+  futures::future::join_all(futures)
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
 async fn process_config(
   crawlers: &Vec<Box<dyn Crawler>>,
   app_config: &ApplicationConfig,
-  crawl_config: &Config,
+  crawl_config: Config,
   thread_number: usize,
 ) -> Vec<Property> {
   let crawler = crawlers::get_crawler(&crawl_config.crawler, crawlers);
@@ -247,7 +250,7 @@ async fn process_config(
         crawler.metadata().name,
         thread_number
       );
-      let properties_result = crawlers::execute(crawl_config, &crawler).await;
+      let properties_result = crawlers::execute(&crawl_config, &crawler).await;
       if properties_result.is_ok() {
         let properties = properties_result.unwrap();
         if app_config.test {
