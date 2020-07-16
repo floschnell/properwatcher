@@ -1,6 +1,6 @@
 # properwatcher
 
-![Logo](logo.svg "A proper watcher")
+<img alt="a proper watcher" src="logo.svg" width="128px">
 
 ![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
 
