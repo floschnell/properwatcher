@@ -57,7 +57,7 @@ impl Observer for Telegram {
             (property_data.plot_squaremeters.unwrap() as i32).to_formatted_string(&Locale::en),
           ));
         }
-        send_telegram_message(app_config, msg);
+        send_telegram_message(app_config, msg).await;
       }
       None => (),
     }
@@ -65,11 +65,11 @@ impl Observer for Telegram {
   }
 }
 
-fn send_telegram_message(app_config: &ApplicationConfig, msg: String) -> () {
+async fn send_telegram_message(app_config: &ApplicationConfig, msg: String) -> () {
   let chat_id = &app_config.telegram.chat_id;
   let api_key = &app_config.telegram.api_key;
 
-  let client = reqwest::blocking::Client::new();
+  let client = reqwest::Client::new();
   let mut map = HashMap::new();
   map.insert("chat_id", format!("{}", chat_id));
   map.insert("text", msg);
@@ -81,14 +81,15 @@ fn send_telegram_message(app_config: &ApplicationConfig, msg: String) -> () {
       api_key
     ))
     .json(&map)
-    .send();
+    .send()
+    .await;
 
   match result {
     Ok(response) => {
       if response.status() != 200 {
         println!(
           "Error while sending message: {:?}",
-          response.text().unwrap()
+          response.text().await.unwrap()
         )
       }
     }
