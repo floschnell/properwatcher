@@ -1,6 +1,6 @@
-# proper\[ty\]watcher
+# properwatcher
 
-![Logo](logo.png "Properwatcher Logo")
+![Logo](logo.png "A proper watcher")
 
 ![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
 
