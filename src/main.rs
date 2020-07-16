@@ -95,7 +95,7 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
     let inner_barrier = barrier.clone();
     let cap_conf = app_config.clone();
     let handle = tokio::spawn(async move {
-      let properties = run_thread(inner_guarded_configs, i, &cap_conf).await;
+      let properties = run_thread(thread_count, inner_guarded_configs, i, &cap_conf).await;
       inner_barrier.wait();
       properties
     });
@@ -215,31 +215,28 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
 }
 
 async fn run_thread(
+  thread_count: usize,
   guarded_configs: Arc<Mutex<Vec<Config>>>,
   thread_number: usize,
   app_config: &ApplicationConfig,
 ) -> Vec<Property> {
   let crawlers: Vec<Box<dyn Crawler>> = crawlers::get_crawlers();
-  let mut futures: Vec<_> = vec![];
-  loop {
-    let config_opt: Option<Config> = match guarded_configs.lock() {
-      Ok(mut guard) => guard.pop(),
-      Err(e) => {
-        eprintln!(
-          "Could not acquire lock on shared configurations: {}.",
-          e.to_string()
-        );
-        continue;
-      }
-    };
-    match config_opt {
-      Some(crawl_config) => {
-        let future = process_config(&crawlers, &app_config, crawl_config.clone(), thread_number);
-        futures.push(Box::pin(future));
-      }
-      None => break,
+  let config_opt: Vec<Config> = match guarded_configs.lock() {
+    Ok(mut guard) => {
+      let configs_per_thread = (guard.len() as f32 / thread_count as f32).ceil() as usize;
+      guard.drain(..configs_per_thread).collect()
     }
-  }
+    Err(e) => {
+      eprintln!(
+        "Could not acquire lock on shared configurations: {}.",
+        e.to_string()
+      );
+      vec![]
+    }
+  };
+  let futures = config_opt
+    .into_iter()
+    .map(|config| process_config(&crawlers, &app_config, config.clone(), thread_number));
   futures::future::join_all(futures)
     .await
     .into_iter()
