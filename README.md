@@ -7,7 +7,7 @@ The _properwatcher_ is a lightweight Rust application that can monitor different
 ## Features
 
 - 🦋 **lightweight**: low on memory and CPU
-- ⚡ **fast**: using Firefox Quantum technology for parallel website processing
+- ⚡ **fast**: parallel & async website processing using Firefox Quantum technology
 - 📦 **modular**: modules (watchers, filters, enrichers and observers) can be (de-)activated and extended easily
 - ☁️ **lambda support**: easy to use as an AWS lambda function and can be reliably scheduled via EventBridge
 - 👶 **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
@@ -49,7 +49,6 @@ You [find the getting started tutorial here](tutorial/0_intro.md).
 
 > Observers get notified once new entries have been found.
 
-- **firebase**: Cloud Firestore
 - **telegram**: Sends messages to any Telegram chat
 - **mail**: Sends mails via SMTP
 - **csv**: Append directly to CSV file for offline analytics
