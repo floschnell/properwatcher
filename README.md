@@ -4,7 +4,7 @@
 
 ![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
 
-The _properwatcher_ is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can filter (eg. drop already processed items), enrich (eg. add geocoordinates) and observe found properties (eg. send telegram notifications or populate a dabatase). Properwatcher is super fast because websites are loaded asynchronously and scraped in parallel with the help of [Firefox' Servo technology](<https://de.wikipedia.org/wiki/Servo_(Software)>). The tool can be run either from command line, docker image or an AWS lambda function.
+The _properwatcher_ is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can filter (eg. drop already processed items), enrich (eg. add geocoordinates) and observe found properties (eg. send telegram notifications or populate a dabatase). Properwatcher is super fast because websites are loaded asynchronously and scraped in parallel with the help of [Firefox' Servo technology](<https://en.wikipedia.org/wiki/Servo_(software)>). The tool can be run either from command line, docker image or an AWS lambda function.
 
 ## Features
 
