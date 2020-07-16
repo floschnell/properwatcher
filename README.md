@@ -1,15 +1,15 @@
 # properwatcher
 
-![Logo](logo.png "A proper watcher")
+![Logo](logo.svg "A proper watcher")
 
 ![Rust](https://github.com/floschnell/properwatcher/workflows/Rust/badge.svg)
 
-The _properwatcher_ is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can filter (eg. drop already processed items), enrich (eg. add geocoordinates) and observe found properties (eg. send telegram notifications or populate a dabatase). The tool can be run either from command line, docker image or an AWS lambda function.
+The _properwatcher_ is a lightweight Rust application that can monitor different property website queries. Found properties are transformed into a normalized representation. Different types of modules can filter (eg. drop already processed items), enrich (eg. add geocoordinates) and observe found properties (eg. send telegram notifications or populate a dabatase). Properwatcher is super fast because websites are loaded asynchronously and scraped in parallel with the help of [Firefox' Servo technology](<https://de.wikipedia.org/wiki/Servo_(Software)>). The tool can be run either from command line, docker image or an AWS lambda function.
 
 ## Features
 
 - 🦋 **lightweight**: low on memory and CPU
-- ⚡ **fast**: parallel & async website processing using Firefox Quantum technology
+- ⚡ **fast**: parallel & async website processing using [Firefox' Servo technology](<https://de.wikipedia.org/wiki/Servo_(Software)>)
 - 📦 **modular**: modules (watchers, filters, enrichers and observers) can be (de-)activated and extended easily
 - ☁️ **lambda support**: easy to use as an AWS lambda function and can be reliably scheduled via EventBridge
 - 👶 **easy to setup**: configure custom searches on the propery portals and then use resulting URLs
