@@ -25,12 +25,6 @@ pub struct NominatimConfig {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct FirebaseConfig {
-  pub auth_json_path: String,
-  pub collection_name: String,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CSVConfig {
   pub filename: String,
 }
@@ -67,8 +61,6 @@ pub struct ApplicationConfig {
   pub nominatim: NominatimConfig,
   #[serde(default = "default_telegram")]
   pub telegram: TelegramConfig,
-  #[serde(default = "default_firebase")]
-  pub firebase: FirebaseConfig,
   #[serde(default = "default_mail")]
   pub mail: MailConfig,
   #[serde(default = "default_csv")]
@@ -108,12 +100,6 @@ fn default_telegram() -> TelegramConfig {
   TelegramConfig {
     api_key: String::from(""),
     chat_id: String::from(""),
-  }
-}
-fn default_firebase() -> FirebaseConfig {
-  FirebaseConfig {
-    auth_json_path: String::from(""),
-    collection_name: String::from(""),
   }
 }
 fn default_dynamodb() -> DynamoDbConfig {
@@ -180,13 +166,6 @@ pub fn read(config_path: String) -> ApplicationConfig {
   let nominatim_nominatim_url: String = config
     .get("nominatim.nominatim_url")
     .unwrap_or(String::new());
-
-  let firebase_auth_json_path = config
-    .get("firebase.auth_json_path")
-    .unwrap_or(String::new());
-  let firebase_collection_name = config
-    .get("firebase.collection_name")
-    .unwrap_or(String::from("properties"));
 
   let dynamodb_table_name = config
     .get("dynamodb.table_name")
@@ -261,10 +240,6 @@ pub fn read(config_path: String) -> ApplicationConfig {
     telegram: TelegramConfig {
       api_key: telegram_api_key,
       chat_id: telegram_chat_id,
-    },
-    firebase: FirebaseConfig {
-      auth_json_path: firebase_auth_json_path,
-      collection_name: firebase_collection_name,
     },
     mail: MailConfig {
       smtp_server: mail_smtp_server,

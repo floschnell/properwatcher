@@ -1,6 +1,7 @@
 use crate::filters::{Filter, FilterError};
 use crate::models::Property;
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -18,6 +19,7 @@ impl CSV {
   }
 }
 
+#[async_trait]
 impl Filter for CSV {
   fn name(&self) -> String {
     String::from("csv")
@@ -51,7 +53,11 @@ impl Filter for CSV {
     }
   }
 
-  fn filter(&mut self, _: &ApplicationConfig, property: &Property) -> Result<bool, FilterError> {
+  async fn filter(
+    &mut self,
+    _: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<bool, FilterError> {
     if property.data.is_some() {
       let external_id = property.data.as_ref().unwrap().externalid.clone();
       let exists = self.ids.contains(&external_id);

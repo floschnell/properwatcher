@@ -2,9 +2,11 @@ use crate::configuration::CriteriaConfig;
 use crate::filters::{Filter, FilterError};
 use crate::models::Property;
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 
 pub struct CriteriaFilter {}
 
+#[async_trait]
 impl Filter for CriteriaFilter {
   fn name(&self) -> String {
     String::from("criteria")
@@ -49,7 +51,7 @@ impl Filter for CriteriaFilter {
     Ok(())
   }
 
-  fn filter(
+  async fn filter(
     &mut self,
     app_config: &ApplicationConfig,
     property: &Property,

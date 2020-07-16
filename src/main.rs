@@ -13,20 +13,20 @@ use crate::observers::get_observers;
 use configuration::ApplicationConfig;
 use crawlers::Config;
 use lambda_runtime::{error::HandlerError, lambda, Context};
+use std::collections::HashMap;
 use std::env;
 use std::io::prelude::*;
 use std::sync::Mutex;
 use std::sync::{Arc, Barrier};
-use std::thread;
-use std::thread::JoinHandle;
 use std::time::Instant;
 
 fn run_lambda(e: ApplicationConfig, _: Context) -> Result<Vec<Property>, HandlerError> {
-  let properties = run(&e, true);
+  let properties = futures::executor::block_on(run(&e, true));
   Ok(properties)
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
   let args: Vec<String> = env::args().collect();
 
   if env::var("AWS_LAMBDA_FUNCTION_NAME").is_ok() {
@@ -45,7 +45,7 @@ fn main() {
 
   let mut initial_run = app_config.initial_run;
   loop {
-    run(&app_config, !initial_run);
+    run(&app_config, !initial_run).await;
     if initial_run {
       initial_run = false;
       println!("initial run finished.");
@@ -63,7 +63,7 @@ fn main() {
   }
 }
 
-fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
+async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   let observers = get_observers(&app_config);
   let enrichers = get_enrichers(&app_config);
   let mut filters = get_filters(&app_config);
@@ -89,13 +89,13 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   let guarded_configs = Arc::new(Mutex::new(app_config.watchers.to_owned()));
 
   // process all crawlers
-  let mut thread_handles: Vec<JoinHandle<Vec<Property>>> = vec![];
+  let mut thread_handles: Vec<_> = vec![];
   for i in 0..thread_count {
     let inner_guarded_configs = guarded_configs.clone();
     let inner_barrier = barrier.clone();
     let cap_conf = app_config.clone();
-    let handle = thread::spawn(move || {
-      let properties = run_thread(inner_guarded_configs, i, &cap_conf);
+    let handle = tokio::spawn(async move {
+      let properties = run_thread(inner_guarded_configs, i, &cap_conf).await;
       inner_barrier.wait();
       properties
     });
@@ -106,11 +106,20 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
   barrier.wait();
 
   // collect results
-  let mut properties = thread_handles
+  let thread_results = futures::future::join_all(thread_handles)
+    .await
     .into_iter()
-    .map(|h| h.join().unwrap_or_default())
+    .map(|result| async {
+      match result {
+        Ok(thread_properties) => thread_properties,
+        Err(_) => vec![],
+      }
+    });
+  let properties: Vec<_> = futures::future::join_all(thread_results)
+    .await
+    .into_iter()
     .flatten()
-    .collect::<Vec<_>>();
+    .collect();
 
   let crawl_duration = crawl_start.elapsed();
   println!(
@@ -128,61 +137,63 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
     print!("processing properties ");
     let _ = std::io::stdout().flush();
     let processing_start = Instant::now();
-    properties = properties
+    let mut processed_properties = vec![];
+
+    for mut property in properties {
+      let property_ref = &property;
+      if futures::future::join_all(filters.iter_mut().map(|filter| async move {
+        match filter.filter(app_config, property_ref).await {
+          Ok(result) => result,
+          Err(err) => {
+            eprintln!("Error during filter: {}", err.message);
+            true
+          }
+        }
+      }))
+      .await
       .into_iter()
-      // running filters
-      .filter(|property| {
-        filters
-          .iter_mut()
-          .all(|f| match f.filter(app_config, property) {
-            Ok(result) => result,
-            Err(e) => {
-              eprintln!("Error while running filter {}: {}", &f.name(), e.message);
-              true
-            }
-          })
-      })
-      .inspect(|_| {
-        print!(".");
-        let _ = std::io::stdout().flush();
-      })
-      // running enrichers
-      .map(|property| {
-        enrichers.iter().fold(property, |property, enricher| {
-          match enricher.enrich(app_config, &property) {
-            Ok(enriched_property) => enriched_property,
-            Err(e) => {
+      .all(std::convert::identity)
+      {
+        let property_ref = &property;
+        futures::future::join_all(enrichers.iter().map(|enricher| async move {
+          match enricher.enrich(app_config, property_ref).await {
+            Ok(enrichments) => enrichments,
+            Err(err) => {
               eprintln!(
                 "Error while running enricher {}: {}",
                 &enricher.name(),
-                e.message
+                err.message
               );
-              property
+              HashMap::new()
             }
           }
-        })
-      })
-      // running observers
-      .inspect(|property| {
-        if app_config.test {
-          println!("{:?}", property);
-        } else {
-          observers.iter().for_each(
-            |observer| match observer.observation(app_config, property) {
-              Ok(_) => (),
-              Err(e) => eprintln!(
-                "Error while running observer {}: {}",
-                &observer.name(),
-                e.message
-              ),
-            },
-          )
-        }
-      })
-      .collect();
+        }))
+        .await
+        .into_iter()
+        .flatten()
+        .for_each(|(k, v)| {
+          property.enrichments.insert(k, v);
+        });
+
+        let property_ref = &property;
+        futures::future::join_all(observers.iter().map(|observer| async move {
+          match observer.observation(app_config, property_ref).await {
+            Ok(_) => (),
+            Err(err) => eprintln!(
+              "Error while running observer {}: {}",
+              &observer.name(),
+              err.message
+            ),
+          }
+        }))
+        .await;
+
+        processed_properties.push(property);
+      }
+    }
 
     let processing_duration = processing_start.elapsed();
-    if properties.len() > 0 {
+    if processed_properties.len() > 0 {
       print!(" ")
     };
     println!(
@@ -196,20 +207,20 @@ fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property> {
       "run took {}.{:03} seconds and successfully processed {} items.",
       run_duration.as_secs(),
       run_duration.subsec_millis(),
-      properties.len()
+      processed_properties.len()
     );
 
-    properties
+    processed_properties
   }
 }
 
-fn run_thread(
+async fn run_thread(
   guarded_configs: Arc<Mutex<Vec<Config>>>,
   thread_number: usize,
   app_config: &ApplicationConfig,
 ) -> Vec<Property> {
   let crawlers: Vec<Box<dyn Crawler>> = crawlers::get_crawlers();
-  let mut properties: Vec<Property> = vec![];
+  let mut futures: Vec<_> = vec![];
   loop {
     let config_opt: Option<Config> = match guarded_configs.lock() {
       Ok(mut guard) => guard.pop(),
@@ -223,19 +234,23 @@ fn run_thread(
     };
     match config_opt {
       Some(crawl_config) => {
-        let results = &mut process_config(&crawlers, &app_config, &crawl_config, thread_number);
-        properties.append(results);
+        let future = process_config(&crawlers, &app_config, crawl_config.clone(), thread_number);
+        futures.push(Box::pin(future));
       }
       None => break,
     }
   }
-  properties
+  futures::future::join_all(futures)
+    .await
+    .into_iter()
+    .flatten()
+    .collect()
 }
 
-fn process_config(
+async fn process_config(
   crawlers: &Vec<Box<dyn Crawler>>,
   app_config: &ApplicationConfig,
-  crawl_config: &Config,
+  crawl_config: Config,
   thread_number: usize,
 ) -> Vec<Property> {
   let crawler = crawlers::get_crawler(&crawl_config.crawler, crawlers);
@@ -246,7 +261,7 @@ fn process_config(
         crawler.metadata().name,
         thread_number
       );
-      let properties_result = crawlers::execute(crawl_config, &crawler);
+      let properties_result = crawlers::execute(&crawl_config, &crawler).await;
       if properties_result.is_ok() {
         let properties = properties_result.unwrap();
         if app_config.test {

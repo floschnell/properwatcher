@@ -1,6 +1,7 @@
 use crate::models::Property;
 use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use serde_derive::{Deserialize, Serialize};
 use std::io::prelude::*;
 
@@ -24,6 +25,7 @@ struct CSVProperty {
 
 pub struct CSV {}
 
+#[async_trait]
 impl Observer for CSV {
   fn name(&self) -> String {
     String::from("csv")
@@ -33,7 +35,7 @@ impl Observer for CSV {
     Ok(())
   }
 
-  fn observation(
+  async fn observation(
     &self,
     app_config: &ApplicationConfig,
     property: &Property,

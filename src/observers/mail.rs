@@ -1,6 +1,7 @@
 use crate::models::{ContractType, Property, PropertyData, PropertyType};
 use crate::observers::{Observer, ObserverError};
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use lettre::{smtp::authentication::Credentials, SmtpClient, Transport};
 use lettre_email::EmailBuilder;
 
@@ -8,6 +9,7 @@ use num_format::{Locale, ToFormattedString};
 
 pub struct Mail {}
 
+#[async_trait]
 impl Observer for Mail {
   fn name(&self) -> String {
     String::from("mail")
@@ -17,7 +19,7 @@ impl Observer for Mail {
     Ok(())
   }
 
-  fn observation(
+  async fn observation(
     &self,
     app_config: &ApplicationConfig,
     property: &Property,

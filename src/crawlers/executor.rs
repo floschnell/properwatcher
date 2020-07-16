@@ -8,7 +8,7 @@ use crate::crawlers::{Config, Crawler, Error as CrawlingError};
 use crate::models::{Encoding, Property};
 use kuchiki::iter::*;
 use kuchiki::traits::*;
-use reqwest::blocking::Response;
+use reqwest::Response;
 use std::time::Instant;
 
 #[derive(Debug)]
@@ -40,8 +40,8 @@ impl From<reqwest::Error> for Error {
   }
 }
 
-pub fn execute(config: &Config, crawler: &Box<dyn Crawler>) -> Result<Vec<Property>, Error> {
-  let results = get_results(config, crawler)?;
+pub async fn execute(config: &Config, crawler: &Box<dyn Crawler>) -> Result<Vec<Property>, Error> {
+  let results = get_results(config, crawler).await?;
   let mut successful: Vec<Property> = Vec::new();
   let flat_results: Vec<Result<Property, Error>> = results
     .map(|result| {
@@ -65,8 +65,8 @@ pub fn execute(config: &Config, crawler: &Box<dyn Crawler>) -> Result<Vec<Proper
   Ok(successful)
 }
 
-fn decode_response(response: Response, encoding: &Encoding) -> Result<String, Error> {
-  let buf: Vec<u8> = response.bytes().unwrap().to_vec();
+async fn decode_response(response: Response, encoding: &Encoding) -> Result<String, Error> {
+  let buf: Vec<u8> = response.bytes().await.unwrap().to_vec();
   let (encoded_string, _, _) = match encoding {
     Encoding::Latin1 => encoding_rs::ISO_8859_2.decode(&buf),
     Encoding::Utf8 => encoding_rs::UTF_8.decode(&buf),
@@ -74,7 +74,7 @@ fn decode_response(response: Response, encoding: &Encoding) -> Result<String, Er
   Ok(encoded_string.into())
 }
 
-fn get_results(
+async fn get_results(
   config: &Config,
   crawler: &Box<dyn Crawler>,
 ) -> Result<Select<Elements<Descendants>>, Error> {
@@ -82,7 +82,7 @@ fn get_results(
 
   let request_start = Instant::now();
   crawler.log(format!(">> sending request to url '{}' ... ", url));
-  let response = reqwest::blocking::get(url.as_str())?;
+  let response = reqwest::get(url.as_str()).await?;
   crawler.log(format!(
     "<< received response in {} ms.",
     request_start.elapsed().as_millis()
@@ -90,7 +90,7 @@ fn get_results(
 
   let parsing_start = Instant::now();
   crawler.log(format!("parsing document ..."));
-  let decoded_response = decode_response(response, &crawler.metadata().encoding)?;
+  let decoded_response = decode_response(response, &crawler.metadata().encoding).await?;
   let document = kuchiki::parse_html()
     .from_utf8()
     .read_from(&mut decoded_response.as_bytes())?;

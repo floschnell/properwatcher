@@ -1,9 +1,11 @@
 use crate::models::{ContractType, Property};
 use crate::observers::observer::{Observer, ObserverError};
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 
 pub struct DebugObserver {}
 
+#[async_trait]
 impl Observer for DebugObserver {
   fn name(&self) -> String {
     String::from("debug")
@@ -13,7 +15,11 @@ impl Observer for DebugObserver {
     Ok(())
   }
 
-  fn observation(&self, _: &ApplicationConfig, property: &Property) -> Result<(), ObserverError> {
+  async fn observation(
+    &self,
+    _: &ApplicationConfig,
+    property: &Property,
+  ) -> Result<(), ObserverError> {
     println!();
     println!(
       "Found property on {} in {}.",

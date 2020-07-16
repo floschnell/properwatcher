@@ -1,6 +1,7 @@
 use crate::filters::{Filter, FilterError};
 use crate::models::Property;
 use crate::ApplicationConfig;
+use async_trait::async_trait;
 use rusoto_core::Region;
 use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, QueryInput};
 use std::collections::HashMap;
@@ -15,6 +16,7 @@ impl DynamoDbFilter {
   }
 }
 
+#[async_trait]
 impl Filter for DynamoDbFilter {
   fn name(&self) -> String {
     String::from("dynamodb")
@@ -31,7 +33,7 @@ impl Filter for DynamoDbFilter {
     Ok(())
   }
 
-  fn filter(
+  async fn filter(
     &mut self,
     app_config: &ApplicationConfig,
     property: &Property,
@@ -57,7 +59,7 @@ impl Filter for DynamoDbFilter {
         ..Default::default()
       };
 
-      let result = self.client.as_ref().unwrap().query(query).sync();
+      let result = self.client.as_ref().unwrap().query(query).await;
       match result {
         Ok(r) => Ok(r.count.unwrap_or(0) <= 0),
         Err(e) => Err(FilterError {
