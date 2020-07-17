@@ -67,7 +67,7 @@ impl Observer for CSV {
         plot_squaremeters: property_data.plot_squaremeters.unwrap_or(0.0),
         address: property_data.address.clone(),
         rooms: property_data.rooms,
-        tags: property_data.tags.clone().join(","),
+        tags: property_data.tags.join(","),
         latitude: property
           .enrichments
           .get("latitude")

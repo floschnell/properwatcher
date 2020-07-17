@@ -59,8 +59,7 @@ impl Filter for DynamoDbFilter {
         ..Default::default()
       };
 
-      let result = self.client.as_ref().unwrap().query(query).await;
-      match result {
+      match self.client.as_ref().unwrap().query(query).await {
         Ok(r) => Ok(r.count.unwrap_or(0) <= 0),
         Err(e) => Err(FilterError {
           message: e.to_string(),

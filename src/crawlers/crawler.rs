@@ -28,6 +28,10 @@ pub struct Metadata {
   pub encoding: Encoding,
 }
 
+fn sanitize(str: &String) -> String {
+  str.replace("\n", "").replace("\r", "")
+}
+
 pub trait Crawler: Send + Sync {
   fn metadata(&self) -> Metadata;
 
@@ -46,7 +50,7 @@ pub trait Crawler: Send + Sync {
     match select_opt {
       Some(select) => match element.as_node().select_first(select.as_ref()) {
         Ok(node) => match node.attributes.borrow().get(name) {
-          Some(val) => Ok(val.to_owned()),
+          Some(val) => Ok(sanitize(&val.to_string())),
           None => Err(Error {
             message: format!("Could not find attribute '{}'!", name),
           }),
@@ -56,7 +60,7 @@ pub trait Crawler: Send + Sync {
         }),
       },
       None => match element.deref().attributes.borrow_mut().get(name) {
-        Some(val) => Ok(val.to_owned()),
+        Some(val) => Ok(sanitize(&val.to_string())),
         None => Err(Error {
           message: format!("Could not find attribute '{}'!", name),
         }),
@@ -69,7 +73,7 @@ pub trait Crawler: Send + Sync {
     Self: Sized,
   {
     match result.as_node().select_first(selector) {
-      Ok(el) => Ok(el.text_contents()),
+      Ok(el) => Ok(sanitize(&el.text_contents())),
       Err(()) => Err(Error {
         message: format!("Could not find selector '{}'!", selector),
       }),
@@ -84,7 +88,7 @@ pub trait Crawler: Send + Sync {
     Self: Sized,
   {
     match result.as_node().select(selector) {
-      Ok(elements) => Ok(elements.map(|e| e.text_contents()).collect()),
+      Ok(elements) => Ok(elements.map(|e| sanitize(&e.text_contents())).collect()),
       Err(()) => Err(Error {
         message: format!("Could not find selector '{}'!", selector),
       }),

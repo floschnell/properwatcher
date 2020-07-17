@@ -109,9 +109,7 @@ impl Observer for DynamoDbObserver {
         item: to_hashmap(&entry).unwrap(),
         ..Default::default()
       };
-
-      let put_result = self.client.put_item(put_item_input).await;
-      match put_result {
+      match self.client.put_item(put_item_input).await {
         Ok(_) => Ok(()),
         Err(error) => Err(ObserverError {
           message: format!("Error while inserting {} to DynamoDb: {:?}", id, error),

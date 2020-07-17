@@ -140,6 +140,8 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
     let mut processed_properties = vec![];
 
     for mut property in properties {
+      print!(".");
+      let _ = std::io::stdout().flush();
       let property_ref = &property;
       if futures::future::join_all(filters.iter_mut().map(|filter| async move {
         match filter.filter(app_config, property_ref).await {
