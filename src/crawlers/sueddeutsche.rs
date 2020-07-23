@@ -40,9 +40,14 @@ impl Crawler for Sueddeutsche {
     let squaremeters_opt: Option<&&str> = hit_rooms_div_elements.get(0);
     let rooms_opt: Option<&&str> = hit_rooms_div_elements.get(1);
 
-    let hit_regions_text = Self::get_text(&result, ".hitRegionTxt")?.replace("\t", "");
-    let hit_regions_elements: Vec<&str> = hit_regions_text.split("\n").collect();
-    let address_opt = hit_regions_elements.get(2);
+    let hit_regions_text = Self::get_text(&result, ".hitRegionTxt.hidden")?.replace("\t", "");
+    let address = hit_regions_text
+      .split(",")
+      .skip(1)
+      .flat_map(|x| vec![x, ","])
+      .collect::<String>()
+      .trim_end_matches(",")
+      .to_string();
 
     let title = Self::get_text(&result, ".hitHeadline")?
       .replace("\t", "")
@@ -52,12 +57,12 @@ impl Crawler for Sueddeutsche {
 
     let externalid = Self::get_attr(&result, None, "id")?.replace("idHitRowList", "");
 
-    match (&squaremeters_opt, &rooms_opt, &address_opt) {
-      (&Some(squaremeters), &Some(rooms), &Some(address)) => Ok(PropertyData {
+    match (&squaremeters_opt, &rooms_opt) {
+      (&Some(squaremeters), &Some(rooms)) => Ok(PropertyData {
         price: Self::parse_number(rent)?,
         squaremeters: Self::parse_number(squaremeters.deref().to_owned())?,
         plot_squaremeters: None,
-        address: self.brackets.replace_all(address.deref(), "").into_owned(),
+        address,
         title,
         rooms: Self::parse_number(rooms.deref().to_owned())?,
         url: format!(
@@ -71,8 +76,8 @@ impl Crawler for Sueddeutsche {
       }),
       _ => Err(Error {
         message: format!(
-          "Information is incomplete: {:?}, {:?}, {:?}!",
-          squaremeters_opt, rooms_opt, address_opt
+          "Information is incomplete: {:?}, {:?}!",
+          squaremeters_opt, rooms_opt
         ),
       }),
     }
