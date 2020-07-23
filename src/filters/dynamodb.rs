@@ -3,16 +3,24 @@ use crate::models::Property;
 use crate::ApplicationConfig;
 use async_trait::async_trait;
 use rusoto_core::Region;
-use rusoto_dynamodb::{AttributeValue, DynamoDb, DynamoDbClient, QueryInput};
+use rusoto_dynamodb::{
+  AttributeValue, BatchGetItemInput, DynamoDb, DynamoDbClient, KeysAndAttributes,
+};
 use std::collections::HashMap;
 
 pub struct DynamoDbFilter {
   pub client: Option<DynamoDbClient>,
+  pub existing: HashMap<String, bool>,
+  pub initialized: bool,
 }
 
 impl DynamoDbFilter {
   pub fn new(_: &ApplicationConfig) -> Self {
-    DynamoDbFilter { client: None }
+    DynamoDbFilter {
+      client: None,
+      existing: HashMap::new(),
+      initialized: false,
+    }
   }
 }
 
@@ -35,35 +43,80 @@ impl Filter for DynamoDbFilter {
 
   async fn filter(
     &mut self,
-    app_config: &ApplicationConfig,
+    _: &ApplicationConfig,
     property: &Property,
+    properties: &Vec<Property>,
   ) -> Result<bool, FilterError> {
+    if !self.initialized {
+      self.initialized = true;
+      for chunks in properties.chunks(100) {
+        let mut items: Vec<HashMap<String, AttributeValue>> = vec![];
+        for n in chunks {
+          let mut id = String::from(n.source.as_str());
+          id.push('-');
+          id.push_str(n.data.as_ref().unwrap().externalid.as_str());
+          let mut item = HashMap::new();
+          item.insert(
+            String::from("id"),
+            AttributeValue {
+              s: Some(id),
+              ..Default::default()
+            },
+          );
+          items.push(item)
+        }
+
+        let mut tables = HashMap::new();
+        tables.insert(
+          String::from("properties"),
+          KeysAndAttributes {
+            keys: items,
+            projection_expression: Some(String::from("id")),
+            ..Default::default()
+          },
+        );
+
+        let batch_get_input: BatchGetItemInput = BatchGetItemInput {
+          request_items: tables,
+          ..Default::default()
+        };
+
+        match self
+          .client
+          .as_ref()
+          .unwrap()
+          .batch_get_item(batch_get_input)
+          .await
+        {
+          Ok(batch_get_output) => match batch_get_output.responses {
+            Some(tables) => {
+              println!("{:?}", tables);
+              tables
+                .get("properties")
+                .unwrap()
+                .into_iter()
+                .map(|i| i.get("id").unwrap().s.as_ref().unwrap())
+                .for_each(|id| {
+                  self.existing.insert(id.clone(), true);
+                });
+            }
+            None => (),
+          },
+          Err(e) => println!("error: {}", e.to_string()),
+        }
+      }
+    }
+
     if property.data.is_some() {
       let mut id = String::from(property.source.as_str());
       id.push('-');
       id.push_str(property.data.as_ref().unwrap().externalid.as_str());
 
-      let mut values = HashMap::new();
-      values.insert(
-        ":id".into(),
-        AttributeValue {
-          s: Some(id),
-          ..Default::default()
-        },
-      );
-
-      let query = QueryInput {
-        table_name: app_config.dynamodb.table_name.to_owned(),
-        key_condition_expression: Some("id = :id".into()),
-        expression_attribute_values: Some(values),
-        ..Default::default()
-      };
-
-      match self.client.as_ref().unwrap().query(query).await {
-        Ok(r) => Ok(r.count.unwrap_or(0) <= 0),
-        Err(e) => Err(FilterError {
-          message: e.to_string(),
-        }),
+      if self.existing.contains_key(&id) {
+        Ok(false)
+      } else {
+        self.existing.insert(id, true);
+        Ok(true)
       }
     } else {
       Err(FilterError {

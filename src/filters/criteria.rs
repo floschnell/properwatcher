@@ -55,6 +55,7 @@ impl Filter for CriteriaFilter {
     &mut self,
     app_config: &ApplicationConfig,
     property: &Property,
+    _properties: &Vec<Property>,
   ) -> Result<bool, FilterError> {
     Ok(self.evaluate(property, &app_config.criteria))
   }

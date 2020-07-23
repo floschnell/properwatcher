@@ -57,6 +57,7 @@ impl Filter for CSV {
     &mut self,
     _: &ApplicationConfig,
     property: &Property,
+    _properties: &Vec<Property>,
   ) -> Result<bool, FilterError> {
     if property.data.is_some() {
       let external_id = property.data.as_ref().unwrap().externalid.clone();

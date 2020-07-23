@@ -109,6 +109,7 @@ impl Observer for DynamoDbObserver {
         item: to_hashmap(&entry).unwrap(),
         ..Default::default()
       };
+
       match self.client.put_item(put_item_input).await {
         Ok(_) => Ok(()),
         Err(error) => Err(ObserverError {

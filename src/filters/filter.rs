@@ -14,5 +14,6 @@ pub trait Filter {
     &mut self,
     app_config: &ApplicationConfig,
     property: &Property,
+    properties: &Vec<Property>,
   ) -> Result<bool, FilterError>;
 }

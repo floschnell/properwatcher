@@ -139,12 +139,13 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
     let processing_start = Instant::now();
     let mut processed_properties = vec![];
 
+    let props = &properties.clone();
     for mut property in properties {
       print!(".");
       let _ = std::io::stdout().flush();
       let property_ref = &property;
       if futures::future::join_all(filters.iter_mut().map(|filter| async move {
-        match filter.filter(app_config, property_ref).await {
+        match filter.filter(app_config, property_ref, props).await {
           Ok(result) => result,
           Err(err) => {
             eprintln!("Error during filter: {}", err.message);
@@ -190,7 +191,7 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
         }))
         .await;
 
-        processed_properties.push(property);
+        processed_properties.push(property.clone());
       }
     }
 
