@@ -90,7 +90,6 @@ impl Filter for DynamoDbFilter {
         {
           Ok(batch_get_output) => match batch_get_output.responses {
             Some(tables) => {
-              println!("{:?}", tables);
               tables
                 .get("properties")
                 .unwrap()
