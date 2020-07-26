@@ -7,6 +7,7 @@ use rusoto_dynamodb::{
   AttributeValue, BatchGetItemInput, DynamoDb, DynamoDbClient, KeysAndAttributes,
 };
 use std::collections::HashMap;
+use tokio::time::timeout;
 
 pub struct DynamoDbFilter {
   pub client: Option<DynamoDbClient>,
@@ -43,7 +44,7 @@ impl Filter for DynamoDbFilter {
 
   async fn filter(
     &mut self,
-    _: &ApplicationConfig,
+    app_config: &ApplicationConfig,
     property: &Property,
     properties: &Vec<Property>,
   ) -> Result<bool, FilterError> {
@@ -51,10 +52,10 @@ impl Filter for DynamoDbFilter {
       self.initialized = true;
       for chunks in properties.chunks(100) {
         let mut items: Vec<HashMap<String, AttributeValue>> = vec![];
-        for n in chunks {
-          let mut id = String::from(n.source.as_str());
+        for chunk in chunks {
+          let mut id = String::from(chunk.source.as_str());
           id.push('-');
-          id.push_str(n.data.as_ref().unwrap().externalid.as_str());
+          id.push_str(chunk.data.as_ref().unwrap().externalid.as_str());
           let mut item = HashMap::new();
           item.insert(
             String::from("id"),
@@ -68,7 +69,7 @@ impl Filter for DynamoDbFilter {
 
         let mut tables = HashMap::new();
         tables.insert(
-          String::from("properties"),
+          app_config.dynamodb.table_name.clone(),
           KeysAndAttributes {
             keys: items,
             projection_expression: Some(String::from("id")),
@@ -81,27 +82,41 @@ impl Filter for DynamoDbFilter {
           ..Default::default()
         };
 
-        match self
-          .client
-          .as_ref()
-          .unwrap()
-          .batch_get_item(batch_get_input)
-          .await
-        {
-          Ok(batch_get_output) => match batch_get_output.responses {
-            Some(tables) => {
-              tables
-                .get("properties")
-                .unwrap()
-                .into_iter()
-                .map(|i| i.get("id").unwrap().s.as_ref().unwrap())
-                .for_each(|id| {
-                  self.existing.insert(id.clone(), true);
-                });
+        let mut retries = 0;
+        loop {
+          let batch_get_out_future = self
+            .client
+            .as_ref()
+            .unwrap()
+            .batch_get_item(batch_get_input.clone());
+          match timeout(std::time::Duration::from_millis(100), batch_get_out_future).await {
+            Err(_) => {
+              retries = retries + 1;
+              eprintln!("(connection to dynamodb timed out #{})", retries);
+              if retries > 2 {
+                eprint!("(giving up)");
+                break;
+              }
             }
-            None => (),
-          },
-          Err(e) => println!("error: {}", e.to_string()),
+            Ok(Ok(batch_get_output)) => match batch_get_output.responses {
+              Some(tables) => {
+                tables
+                  .get(&app_config.dynamodb.table_name)
+                  .unwrap()
+                  .into_iter()
+                  .map(|i| i.get("id").unwrap().s.as_ref().unwrap().clone())
+                  .for_each(|el| {
+                    self.existing.insert(el.clone(), true);
+                  });
+                break;
+              }
+              None => break,
+            },
+            Ok(Err(e)) => {
+              eprintln!("error: {}", e.to_string());
+              break;
+            }
+          }
         }
       }
     }
