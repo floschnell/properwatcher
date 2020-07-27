@@ -89,12 +89,12 @@ impl Filter for DynamoDbFilter {
             .as_ref()
             .unwrap()
             .batch_get_item(batch_get_input.clone());
-          match timeout(std::time::Duration::from_millis(500), batch_get_out_future).await {
+          match timeout(std::time::Duration::from_millis(5000), batch_get_out_future).await {
             Err(_) => {
               retries = retries + 1;
               eprintln!("(connection to dynamodb timed out #{})", retries);
               if retries > 2 {
-                eprint!("(giving up)");
+                eprintln!("(giving up)");
                 break;
               }
             }

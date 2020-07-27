@@ -134,8 +134,6 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
     println!("will not process properties.");
     properties
   } else {
-    print!("processing properties ");
-    let _ = std::io::stdout().flush();
     let processing_start = Instant::now();
     let mut processed_properties = vec![];
 
@@ -145,9 +143,13 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
       println!("processing property {}:", property_ref.id());
 
       if futures::future::join_all(filters.iter_mut().map(|filter| async move {
-        println!("> running filter {}.", &filter.name(),);
+        print!("> running filter {}", &filter.name());
+        let _ = std::io::stdout().flush();
         match filter.filter(app_config, property_ref, props).await {
-          Ok(result) => result,
+          Ok(result) => {
+            println!(" ({}).", result);
+            result
+          }
           Err(err) => {
             eprintln!("Error during filter: {}", err.message);
             true
@@ -195,6 +197,8 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
         .await;
 
         processed_properties.push(property.clone());
+      } else {
+        println!("> removed by filter.");
       }
     }
 
@@ -210,10 +214,11 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
 
     let run_duration = run_started.elapsed();
     println!(
-      "run took {}.{:03} seconds and successfully processed {} items.",
+      "found a total of {} items in {}.{:03} seconds of which {} passed filters.",
+      props.len(),
       run_duration.as_secs(),
       run_duration.subsec_millis(),
-      processed_properties.len()
+      processed_properties.len(),
     );
 
     processed_properties
