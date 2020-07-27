@@ -84,6 +84,13 @@ impl PartialEq for Property {
 }
 
 impl Property {
+  pub fn id(&self) -> String {
+    match &self.data {
+      Some(d) => format!("{}-{}", self.source, d.externalid),
+      None => format!("{}-{}", self.source, self.date),
+    }
+  }
+
   fn is_equal_to(&self, other: &Self) -> bool {
     let special_characters_regex = Regex::new("[^0-9a-zA-Z]+").unwrap();
     self.city == other.city

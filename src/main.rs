@@ -141,10 +141,11 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
 
     let props = &properties.clone();
     for mut property in properties {
-      print!(".");
-      let _ = std::io::stdout().flush();
       let property_ref = &property;
+      println!("processing property {}:", property_ref.id());
+
       if futures::future::join_all(filters.iter_mut().map(|filter| async move {
+        println!("> running filter {}.", &filter.name(),);
         match filter.filter(app_config, property_ref, props).await {
           Ok(result) => result,
           Err(err) => {
@@ -159,6 +160,7 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
       {
         let property_ref = &property;
         futures::future::join_all(enrichers.iter().map(|enricher| async move {
+          println!("> running enricher {}.", &enricher.name());
           match enricher.enrich(app_config, property_ref).await {
             Ok(enrichments) => enrichments,
             Err(err) => {
@@ -180,6 +182,7 @@ async fn run(app_config: &ApplicationConfig, postprocess: bool) -> Vec<Property>
 
         let property_ref = &property;
         futures::future::join_all(observers.iter().map(|observer| async move {
+          println!("> running observer {}.", &observer.name());
           match observer.observation(app_config, property_ref).await {
             Ok(_) => (),
             Err(err) => eprintln!(

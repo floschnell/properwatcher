@@ -65,9 +65,7 @@ impl Observer for DynamoDbObserver {
     if property.data.is_some() {
       let property_data = property.data.as_ref().unwrap();
 
-      let mut id = String::from(property.source.as_str());
-      id.push('-');
-      id.push_str(property.data.as_ref().unwrap().externalid.as_str());
+      let id = property.id();
 
       let entry = DynamoDbEntry {
         id: id.clone(),
