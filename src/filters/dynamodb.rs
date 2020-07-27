@@ -89,7 +89,7 @@ impl Filter for DynamoDbFilter {
             .as_ref()
             .unwrap()
             .batch_get_item(batch_get_input.clone());
-          match timeout(std::time::Duration::from_millis(100), batch_get_out_future).await {
+          match timeout(std::time::Duration::from_millis(500), batch_get_out_future).await {
             Err(_) => {
               retries = retries + 1;
               eprintln!("(connection to dynamodb timed out #{})", retries);
@@ -122,9 +122,7 @@ impl Filter for DynamoDbFilter {
     }
 
     if property.data.is_some() {
-      let mut id = String::from(property.source.as_str());
-      id.push('-');
-      id.push_str(property.data.as_ref().unwrap().externalid.as_str());
+      let id = property.id();
 
       if self.existing.contains_key(&id) {
         Ok(false)
