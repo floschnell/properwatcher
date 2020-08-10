@@ -73,13 +73,6 @@ nominatim_url = "https://nominatim.openstreetmap.org/search"
 # feel free to append a custom string i.e. properwatcher-flo
 user_agent = "properwatcher"
 
-# found properties can be stored in a firebase database.
-[firebase]
-# if enabled, the file from auth_json_path will be read and used for authentication.
-auth_json_path = "firebase.json"
-# collection name
-collection_name = "properties"
-
 # found properties can be sent to a given Telegram channel
 # therefore, you first need to create a Telegram bot and start a conversation with it.
 # you can follow this tutorial's first two steps to create a bot token and chat id:
@@ -119,3 +112,13 @@ filename = "properwatcher.csv"
 table_name = "properties"
 # the region your dynamodb is located in
 region = "eu-central-1"
+
+# found properties can be filtered for standard attributes
+# only properties matching the given criteria will be processed
+[criteria]
+price_min = 100
+price_max = 500
+squaremeters_min = 10
+squaremeters_max = 60
+rooms_min = 1
+rooms_max = 2
